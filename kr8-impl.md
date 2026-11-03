@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **M0 — Skeleton and machine**  
-Current task: **M0.3 — Memory, registers, fetch/decode**
+Current milestone: **M1 — Image, assembler, disassembler**  
+Current task: **M1.1 — Image model and `.k8` format**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -88,11 +88,11 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T11:40:34-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T11:45:02-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
-| M0 — Skeleton and machine | `In progress` | 2026-11-03 | — | M0.3 |
+| M0 — Skeleton and machine | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M1 — Image, assembler, disassembler | `Not started` | — | — | M1.1 |
 | M2 — VM and CLI | `Not started` | — | — | M2.1 |
 | M3 — Debug session | `Not started` | — | — | M3.1 |
@@ -100,9 +100,10 @@ Last updated: **2026-11-03T11:40:34-08:00** (America/Los_Angeles)
 | M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 2 done, 0 in progress, 0 blocked.  
-**Code:** M0.1 skeleton + M0.2 ISA table and normative `docs/isa.md`.  
-**Current focus:** M0.3.
+**Tasks:** 44 total, 8 done, 0 in progress, 0 blocked.  
+**Code:** complete 8-bit CPU, ISA table, memory, machine wrapper, console/input
+queue, and 62 tests on Windows and Linux (including ASan/UBSan).  
+**Current focus:** M1.1.
 
 ### Critical path
 
@@ -211,7 +212,7 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 ### M0.3 — Memory, registers, fetch/decode
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.2
 - **Estimate:** 0.5 day
 - **Files:** `include/kr8/cpu.hpp`, `src/vm/cpu.cpp`,
@@ -220,14 +221,14 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 **Work**
 
-- [ ] `Memory`: `std::array<uint8_t, 256>` with `read8`/`write8` and zero fill.
-- [ ] CPU registers: `A`, `B`, `PC`, `SP`, `FLAGS`; getters/setters.
-- [ ] Stack metadata: depth (0–256), floor (`image_high`), reset values.
-- [ ] Fetch opcode, decode length from the ISA table, fetch operand when needed.
-- [ ] `StepResult` with status, PC, cycles, and message.
-- [ ] PC-wrap fault when a 2-byte instruction starts at `0xFF`.
-- [ ] Illegal-opcode fault with the opcode and address in the message.
-- [ ] Tests: 1-byte/2-byte fetch, PC advance, wrap fault, illegal opcode.
+- [x] `Memory`: `std::array<uint8_t, 256>` with `read8`/`write8` and zero fill.
+- [x] CPU registers: `A`, `B`, `PC`, `SP`, `FLAGS`; getters/setters.
+- [x] Stack metadata: depth (0–256), floor (`image_high`), reset values.
+- [x] Fetch opcode, decode length from the ISA table, fetch operand when needed.
+- [x] `StepResult` with status, PC, cycles, and message.
+- [x] PC-wrap fault when a 2-byte instruction starts at `0xFF`.
+- [x] Illegal-opcode fault with the opcode and address in the message.
+- [x] Tests: 1-byte/2-byte fetch, PC advance, wrap fault, illegal opcode.
 
 **Acceptance**
 
@@ -237,7 +238,7 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 ### M0.4 — ALU and flags
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.3
 - **Estimate:** 0.5 day
 - **Files:** `src/vm/cpu.cpp`, `tests/test_cpu_alu.cpp`
@@ -245,13 +246,13 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 **Work**
 
-- [ ] `ADD`, `ADC`, `SUB`, `SBC`, `CMP` with exact `Z/C/N/V`.
-- [ ] `AND`, `OR`, `XOR`, `TST`, `NOT` with `C=0`, `V=0`.
-- [ ] `NEG`, `INC A/B`, `DEC A/B`, `SHL`, `SHR`, `SAR`, `CLC`, `SEC`.
-- [ ] `MOV`/`LD`/`POP` update `Z`/`N`; `ST`/`PUSH` do not.
-- [ ] Carry/borrow and signed-overflow tests at `0x00`, `0x7F`, `0x80`,
+- [x] `ADD`, `ADC`, `SUB`, `SBC`, `CMP` with exact `Z/C/N/V`.
+- [x] `AND`, `OR`, `XOR`, `TST`, `NOT` with `C=0`, `V=0`.
+- [x] `NEG`, `INC A/B`, `DEC A/B`, `SHL`, `SHR`, `SAR`, `CLC`, `SEC`.
+- [x] `MOV`/`LD`/`POP` update `Z`/`N`; `ST`/`PUSH` do not.
+- [x] Carry/borrow and signed-overflow tests at `0x00`, `0x7F`, `0x80`,
       `0xFF`, and boundary cases.
-- [ ] Cycle contribution per instruction (bytes + operation extras).
+- [x] Cycle contribution per instruction (bytes + operation extras).
 
 **Acceptance**
 
@@ -261,7 +262,7 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 ### M0.5 — Loads, stores, stack, and control flow
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.4
 - **Estimate:** 0.5 day
 - **Files:** `src/vm/cpu.cpp`, `tests/test_cpu_control.cpp`
@@ -269,15 +270,15 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 **Work**
 
-- [ ] `MOV A/B, #n`; `MOV A, B`; `MOV B, A`.
-- [ ] `LD A/B, [a]`; `LD A, [B]`; `ST [a], A/B`; `ST [B], A`.
-- [ ] `PUSH A/B`, `POP A/B`; stack depth and floor checks.
-- [ ] `JMP`, `JZ`, `JNZ`, `JC`, `JNC`, `JN`, `JNN`, `JV`, `JNV`,
+- [x] `MOV A/B, #n`; `MOV A, B`; `MOV B, A`.
+- [x] `LD A/B, [a]`; `LD A, [B]`; `ST [a], A/B`; `ST [B], A`.
+- [x] `PUSH A/B`, `POP A/B`; stack depth and floor checks.
+- [x] `JMP`, `JZ`, `JNZ`, `JC`, `JNC`, `JN`, `JNN`, `JV`, `JNV`,
       `JLT`, `JGE`, `JGT`, `JLE`; taken/not taken.
-- [ ] `CALL`, `RET`, nested calls, return-address correctness.
-- [ ] `HLT`, `NOP`, `BRK`; `BRK` halt/resume semantics.
-- [ ] Stack-overflow and stack-underflow faults.
-- [ ] Tests: branch matrix, nested calls, stack faults, `BRK` resume.
+- [x] `CALL`, `RET`, nested calls, return-address correctness.
+- [x] `HLT`, `NOP`, `BRK`; `BRK` halt/resume semantics.
+- [x] Stack-overflow and stack-underflow faults.
+- [x] Tests: branch matrix, nested calls, stack faults, `BRK` resume.
 
 **Acceptance**
 
@@ -288,7 +289,7 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 ### M0.6 — Console I/O and cycles
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.5
 - **Estimate:** 0.25 day
 - **Files:** `src/vm/cpu.cpp`, `tests/test_cpu_io.cpp`
@@ -296,12 +297,12 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 **Work**
 
-- [ ] `OUT A` callback; no flags.
-- [ ] `IN A` callback returning `std::optional<uint8_t>`.
-- [ ] `IN`: byte available → `A=byte`, `Z=0`; none → `A=0`, `Z=1`;
+- [x] `OUT A` callback; no flags.
+- [x] `IN A` callback returning `std::optional<uint8_t>`.
+- [x] `IN`: byte available → `A=byte`, `Z=0`; none → `A=0`, `Z=1`;
       `N/C/V` unchanged.
-- [ ] Test a real `0x00` byte (Z must be 0), a non-zero byte, and no byte.
-- [ ] Cycle formula: bytes + memory access + taken transfer; tests for
+- [x] Test a real `0x00` byte (Z must be 0), a non-zero byte, and no byte.
+- [x] Cycle formula: bytes + memory access + taken transfer; tests for
       representative instructions.
 
 **Acceptance**
@@ -312,7 +313,7 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 ### M0.7 — Machine wrapper
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.6
 - **Estimate:** 0.25 day
 - **Files:** `include/kr8/machine.hpp`, `src/vm/machine.cpp`,
@@ -321,12 +322,12 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 **Work**
 
-- [ ] `Machine` owns `Cpu`, `Memory`, output callback, input callback, stats.
-- [ ] `load(const Image&)` or a temporary 256-byte load path until M1.
-- [ ] `reset()`; `step()`; `halted()`; `fault()`; `out()`/`in()` plumbing.
-- [ ] Console output capture string; input queue helpers.
-- [ ] Blocking stdin host for the CLI (read one byte, EOF → no byte).
-- [ ] Instruction/cycle counters.
+- [x] `Machine` owns `Cpu`, `Memory`, output callback, input callback, stats.
+- [x] `load(const Image&)` or a temporary 256-byte load path until M1.
+- [x] `reset()`; `step()`; `halted()`; `fault()`; `out()`/`in()` plumbing.
+- [x] Console output capture string; input queue helpers.
+- [x] Blocking stdin host for the CLI (read one byte, EOF → no byte).
+- [x] Instruction/cycle counters.
 
 **Acceptance**
 
@@ -336,7 +337,7 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 ### M0.8 — M0 test gate
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.1–M0.7
 - **Estimate:** 0.25 day
 - **Files:** `tests/`, `kr8-impl.md`
@@ -344,17 +345,21 @@ lookups return null; `docs/isa.md` is now the normative reference.
 
 **Work**
 
-- [ ] Run the full CPU/ISA suite on Windows and Linux.
-- [ ] Run ASan/UBSan on Linux.
-- [ ] Confirm zero warnings under the configured flags.
-- [ ] Update the status dashboard and work log.
-- [ ] Record any open issue as a task or a blocker.
+- [x] Run the full CPU/ISA suite on Windows and Linux.
+- [x] Run ASan/UBSan on Linux.
+- [x] Confirm zero warnings under the configured flags.
+- [x] Update the status dashboard and work log.
+- [x] Record any open issue as a task or a blocker.
 
 **Acceptance**
 
 - All M0 tests pass; no known P0/P1 defect.
 - `kr8_core` builds without UI.
 - The work log has a gate entry.
+
+Verified: 62 tests pass on Windows MSVC (`windows-vs2026-debug`), Linux GCC
+(`linux-gcc-debug`), and Linux ASan/UBSan (`linux-gcc-sanitize`); zero warnings
+under `/W4 /WX` and `-Wall -Wextra -Wpedantic -Werror`.
 
 ---
 
@@ -1336,6 +1341,11 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T11:45:02-08:00** — M0 gate passed: 62 tests on Windows MSVC,
+  Linux GCC, and Linux ASan/UBSan; zero warnings. M0 complete. Next: M1.1.
+- **2026-11-03T11:45:02-08:00** — M0.3–M0.7 done: memory/registers,
+  fetch/decode, full ALU and flags, loads/stores/stack/control flow, I/O and
+  cycles, and the machine wrapper with console capture and input queue.
 - **2026-11-03T11:40:34-08:00** — M0.2 done: shared 63-entry ISA table with
   opcode/size/operand/flags/help metadata, alias lookup, instruction formatting,
   and normative `docs/isa.md`. 15 tests pass (12 ISA-specific). Next: M0.3.
@@ -1366,12 +1376,12 @@ Timestamps use `local-datetime` and the host time zone
 |---|---|---|---|
 | M0.1 | Repository skeleton and CMake | — | `Done` |
 | M0.2 | Shared ISA table | M0.1 | `Done` |
-| M0.3 | Memory, registers, fetch/decode | M0.2 | `Not started` |
-| M0.4 | ALU and flags | M0.3 | `Not started` |
-| M0.5 | Loads, stores, stack, control flow | M0.4 | `Not started` |
-| M0.6 | Console I/O and cycles | M0.5 | `Not started` |
-| M0.7 | Machine wrapper | M0.6 | `Not started` |
-| M0.8 | M0 test gate | M0.1–M0.7 | `Not started` |
+| M0.3 | Memory, registers, fetch/decode | M0.2 | `Done` |
+| M0.4 | ALU and flags | M0.3 | `Done` |
+| M0.5 | Loads, stores, stack, control flow | M0.4 | `Done` |
+| M0.6 | Console I/O and cycles | M0.5 | `Done` |
+| M0.7 | Machine wrapper | M0.6 | `Done` |
+| M0.8 | M0 test gate | M0.1–M0.7 | `Done` |
 | M1.1 | Image model and `.k8` format | M0.8 | `Not started` |
 | M1.2 | Lexer and line parser | M1.1 | `Not started` |
 | M1.3 | Expressions | M1.2 | `Not started` |
@@ -1417,11 +1427,11 @@ Use this at each gate; copy the relevant block into the work log.
 
 ### M0 checkpoint
 
-- [ ] CMake configures on Windows.
-- [ ] ISA table has 63 instructions and no duplicates.
-- [ ] CPU tests cover every instruction and flag edge case.
-- [ ] Stack overflow/underflow and PC wrap are tested.
-- [ ] No warnings; ASan/UBSan clean on Linux.
+- [x] CMake configures on Windows.
+- [x] ISA table has 63 instructions and no duplicates.
+- [x] CPU tests cover every instruction and flag edge case.
+- [x] Stack overflow/underflow and PC wrap are tested.
+- [x] No warnings; ASan/UBSan clean on Linux.
 
 ### M1 checkpoint
 
