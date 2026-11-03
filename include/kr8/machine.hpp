@@ -2,8 +2,11 @@
 
 #include <cstdint>
 #include <deque>
+#include <functional>
+#include <optional>
 #include <span>
 #include <string>
+#include <utility>
 
 #include "kr8/cpu.hpp"
 
@@ -43,6 +46,13 @@ public:
     void clear_input() { input_.clear(); }
     std::size_t input_size() const noexcept { return input_.size(); }
 
+    /// Called when the input queue is empty. Used by the CLI to block on
+    /// stdin; the UI leaves it unset so IN is non-blocking.
+    void set_fallback_input(
+        std::function<std::optional<std::uint8_t>()> handler) {
+        fallback_in_ = std::move(handler);
+    }
+
     std::uint8_t entry() const noexcept { return entry_; }
     std::uint16_t stack_floor() const noexcept { return stack_floor_; }
 
@@ -56,6 +66,7 @@ private:
     Cpu cpu_;
     std::string console_;
     std::deque<std::uint8_t> input_;
+    std::function<std::optional<std::uint8_t>()> fallback_in_;
     std::uint8_t entry_ = 0;
     std::uint16_t stack_floor_ = 0;
 };

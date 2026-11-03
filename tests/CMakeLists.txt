@@ -6,6 +6,7 @@ add_executable(kr8_tests
   test_assembler.cpp
   test_disassembler.cpp
   test_examples.cpp
+  test_runner.cpp
   test_cpu_decode.cpp
   test_cpu_alu.cpp
   test_cpu_control.cpp
@@ -50,4 +51,12 @@ add_test(NAME kr8.cli.sym
 set_tests_properties(kr8.cli.sym PROPERTIES
   DEPENDS kr8.cli.as
   PASS_REGULAR_EXPRESSION "msg"
+)
+
+add_test(NAME kr8.cli.run
+  COMMAND kr8 run "${CMAKE_CURRENT_BINARY_DIR}/hello.k8"
+)
+set_tests_properties(kr8.cli.run PROPERTIES
+  DEPENDS kr8.cli.as
+  PASS_REGULAR_EXPRESSION "Hello, KR8!"
 )

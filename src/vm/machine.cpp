@@ -13,12 +13,15 @@ Machine::Machine() {
         console_.push_back(static_cast<char>(value));
     });
     cpu_.set_in_handler([this]() -> std::optional<std::uint8_t> {
-        if (input_.empty()) {
-            return std::nullopt;
+        if (!input_.empty()) {
+            const std::uint8_t value = input_.front();
+            input_.pop_front();
+            return value;
         }
-        const std::uint8_t value = input_.front();
-        input_.pop_front();
-        return value;
+        if (fallback_in_) {
+            return fallback_in_();
+        }
+        return std::nullopt;
     });
 }
 

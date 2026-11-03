@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **M2 — VM and CLI**  
-Current task: **M2.1 — Runner and `kr8 run`**
+Current milestone: **M3 — Debug session**  
+Current task: **M3.1 — Session load, restart, snapshot**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -88,22 +88,22 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T11:54:27-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T11:57:21-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
 | M0 — Skeleton and machine | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M1 — Image, assembler, disassembler | `Done` | 2026-11-03 | 2026-11-03 | — |
-| M2 — VM and CLI | `In progress` | 2026-11-03 | — | M2.1 |
-| M3 — Debug session | `Not started` | — | — | M3.1 |
+| M2 — VM and CLI | `Done` | 2026-11-03 | 2026-11-03 | — |
+| M3 — Debug session | `In progress` | 2026-11-03 | — | M3.1 |
 | M4 — UI foundation and Win32 | `Not started` | — | — | M4.1 |
 | M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 16 done, 0 in progress, 0 blocked.  
-**Code:** M0 core plus `.k8` images, the two-pass assembler, listing, and the
-symbol-aware disassembler with `as`/`dis`/`sym` CLI commands.  
-**Current focus:** M2.1.
+**Tasks:** 44 total, 20 done, 0 in progress, 0 blocked.  
+**Code:** the full command-line toolchain: `as`, `dis`, `sym`, and `run`, with
+trace/stats, console I/O, golden examples, and precise faults.  
+**Current focus:** M3.1.
 
 ### Critical path
 
@@ -585,7 +585,7 @@ and precise faults. Golden examples prove the whole pipeline.
 
 ### M2.1 — Runner and `kr8 run`
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.8
 - **Estimate:** 0.5 day
 - **Files:** `src/vm/runner.cpp`, `src/cli/main.cpp`,
@@ -594,13 +594,13 @@ and precise faults. Golden examples prove the whole pipeline.
 
 **Work**
 
-- [ ] Load `.k8` or raw `.bin`; reset; run step loop.
-- [ ] `OUT` to stdout; `IN` from `--input` or stdin; EOF → no byte.
-- [ ] `--entry`, `--raw`, `--input`, `--max-instructions`, `--trace`,
+- [x] Load `.k8` or raw `.bin`; reset; run step loop.
+- [x] `OUT` to stdout; `IN` from `--input` or stdin; EOF → no byte.
+- [x] `--entry`, `--raw`, `--input`, `--max-instructions`, `--trace`,
       `--stats`.
-- [ ] Exit codes 0/1/2/3.
-- [ ] Trace format with PC, A, B, SP, flags, instruction.
-- [ ] Tests: each option, exit codes, trace shape.
+- [x] Exit codes 0/1/2/3.
+- [x] Trace format with PC, A, B, SP, flags, instruction.
+- [x] Tests: each option, exit codes, trace shape.
 
 **Acceptance**
 
@@ -610,7 +610,7 @@ and precise faults. Golden examples prove the whole pipeline.
 
 ### M2.2 — Fault diagnostics and edge cases
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M2.1
 - **Estimate:** 0.5 day
 - **Files:** `src/vm/runner.cpp`, `tests/test_faults.cpp`
@@ -618,11 +618,11 @@ and precise faults. Golden examples prove the whole pipeline.
 
 **Work**
 
-- [ ] Illegal opcode: address, opcode, readable message.
-- [ ] Stack overflow/underflow: address and operation.
-- [ ] PC wrap: address and cause.
-- [ ] `BRK`: stop, message, exit 0; `HLT`: normal stop.
-- [ ] Tests: each fault from a crafted image.
+- [x] Illegal opcode: address, opcode, readable message.
+- [x] Stack overflow/underflow: address and operation.
+- [x] PC wrap: address and cause.
+- [x] `BRK`: stop, message, exit 0; `HLT`: normal stop.
+- [x] Tests: each fault from a crafted image.
 
 **Acceptance**
 
@@ -632,7 +632,7 @@ and precise faults. Golden examples prove the whole pipeline.
 
 ### M2.3 — Golden examples and CLI tests
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M2.2
 - **Estimate:** 0.5 day
 - **Files:** `examples/*.asm`, `tests/test_examples.cpp`,
@@ -641,13 +641,13 @@ and precise faults. Golden examples prove the whole pipeline.
 
 **Work**
 
-- [ ] Add `hello.asm`, `count.asm`, `echo.asm`, `puts.asm`, `memory.asm`,
+- [x] Add `hello.asm`, `count.asm`, `echo.asm`, `puts.asm`, `memory.asm`,
       `stack.asm`, `flags.asm`.
-- [ ] Assemble each in the test, run, compare stdout.
-- [ ] Check `memory.asm` memory contents after the run.
-- [ ] Check `count.asm` output `0123456789\n`.
-- [ ] Check `stack.asm` output `!A`.
-- [ ] Document each example's teaching point.
+- [x] Assemble each in the test, run, compare stdout.
+- [x] Check `memory.asm` memory contents after the run.
+- [x] Check `count.asm` output `0123456789\n`.
+- [x] Check `stack.asm` output `!A`.
+- [x] Document each example's teaching point.
 
 **Acceptance**
 
@@ -656,21 +656,25 @@ and precise faults. Golden examples prove the whole pipeline.
 
 ### M2.4 — M2 test gate
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M2.1–M2.3
 - **Estimate:** 0.25 day
 - **Files:** `tests/`, `kr8-impl.md`
 
 **Work**
 
-- [ ] Full suite on Windows and Linux.
-- [ ] ASan/UBSan on Linux.
-- [ ] `kr8 as` → `kr8 run` pipeline for every example.
-- [ ] Update dashboard and work log.
+- [x] Full suite on Windows and Linux.
+- [x] ASan/UBSan on Linux.
+- [x] `kr8 as` → `kr8 run` pipeline for every example.
+- [x] Update dashboard and work log.
 
 **Acceptance**
 
 - All M2 tests pass; no known P0/P1 defect.
+
+Verified: 105 C++ tests and 6 CTest targets pass on Windows MSVC, Linux GCC,
+and Linux ASan/UBSan. All seven examples run through `as` → `run`; CLI exit
+codes were checked for illegal opcode (2), budget (3), BRK (0), and PC wrap (2).
 
 ---
 
@@ -1353,6 +1357,11 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T11:57:21-08:00** — M2 gate passed: runner/CLI, trace/stats,
+  console I/O, faults, and all seven golden examples. 105 C++ tests and 6 CTest
+  targets on Windows, Linux GCC, and Linux ASan/UBSan; CLI exit codes verified
+  for illegal opcode (2), budget (3), BRK (0), and PC wrap (2). M2 complete.
+  Next: M3.1.
 - **2026-11-03T11:54:27-08:00** — M1 gate passed: 90 C++ tests and 5 CTest
   targets on Windows, Linux GCC, and Linux ASan/UBSan; all seven examples
   assemble/round-trip/disassemble; zero warnings. M1 complete. Next: M2.1.
@@ -1412,10 +1421,10 @@ Timestamps use `local-datetime` and the host time zone
 | M1.6 | Disassembler library | M1.4 | `Done` |
 | M1.7 | `kr8 dis` and `kr8 sym` | M1.6 | `Done` |
 | M1.8 | M1 test gate | M1.1–M1.7 | `Done` |
-| M2.1 | Runner and `kr8 run` | M1.8 | `Not started` |
-| M2.2 | Fault diagnostics and edge cases | M2.1 | `Not started` |
-| M2.3 | Golden examples and CLI tests | M2.2 | `Not started` |
-| M2.4 | M2 test gate | M2.1–M2.3 | `Not started` |
+| M2.1 | Runner and `kr8 run` | M1.8 | `Done` |
+| M2.2 | Fault diagnostics and edge cases | M2.1 | `Done` |
+| M2.3 | Golden examples and CLI tests | M2.2 | `Done` |
+| M2.4 | M2 test gate | M2.1–M2.3 | `Done` |
 | M3.1 | Session load, restart, snapshot | M2.4 | `Not started` |
 | M3.2 | Stepping and shadow call stack | M3.1 | `Not started` |
 | M3.3 | Breakpoints | M3.2 | `Not started` |
@@ -1465,10 +1474,10 @@ Use this at each gate; copy the relevant block into the work log.
 
 ### M2 checkpoint
 
-- [ ] All golden examples produce expected output.
-- [ ] Faults are precise and exit codes correct.
-- [ ] `--trace`, `--stats`, `--input`, `--max-instructions` tested.
-- [ ] `as` → `run` pipeline passes on Windows and Linux.
+- [x] All golden examples produce expected output.
+- [x] Faults are precise and exit codes correct.
+- [x] `--trace`, `--stats`, `--input`, `--max-instructions` tested.
+- [x] `as` → `run` pipeline passes on Windows and Linux.
 
 ### M3 checkpoint
 

@@ -31,6 +31,7 @@ add_library(kr8_core STATIC
   src/dis/disassembler.cpp
   src/vm/cpu.cpp
   src/vm/machine.cpp
+  src/vm/runner.cpp
   src/platform/console.cpp
 )
 
