@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **M1 — Image, assembler, disassembler**  
-Current task: **M1.2 — Lexer and line parser**
+Current milestone: **M2 — VM and CLI**  
+Current task: **M2.1 — Runner and `kr8 run`**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -88,22 +88,22 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T11:47:26-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T11:54:27-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
 | M0 — Skeleton and machine | `Done` | 2026-11-03 | 2026-11-03 | — |
-| M1 — Image, assembler, disassembler | `In progress` | 2026-11-03 | — | M1.2 |
-| M2 — VM and CLI | `Not started` | — | — | M2.1 |
+| M1 — Image, assembler, disassembler | `Done` | 2026-11-03 | 2026-11-03 | — |
+| M2 — VM and CLI | `In progress` | 2026-11-03 | — | M2.1 |
 | M3 — Debug session | `Not started` | — | — | M3.1 |
 | M4 — UI foundation and Win32 | `Not started` | — | — | M4.1 |
 | M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 9 done, 0 in progress, 0 blocked.  
-**Code:** M0 core plus the `.k8` image model, CRC, reader/writer, and raw
-`.bin` support.  
-**Current focus:** M1.2.
+**Tasks:** 44 total, 16 done, 0 in progress, 0 blocked.  
+**Code:** M0 core plus `.k8` images, the two-pass assembler, listing, and the
+symbol-aware disassembler with `as`/`dis`/`sym` CLI commands.  
+**Current focus:** M2.1.
 
 ### Critical path
 
@@ -368,6 +368,11 @@ under `/W4 /WX` and `-Wall -Wextra -Wpedantic -Werror`.
 **Goal:** `.k8` images with symbols/lines/source/code map, a two-pass assembler,
 a symbol-aware disassembler, and the `as`/`dis`/`sym` CLI commands.
 
+**Implementation note:** the lexer, line parser, and expression evaluator live
+in `src/asm/assembler.cpp`; the file split in M1.2/M1.3 is organizational, not a
+behavior contract. CLI coverage is in CTest as `kr8.cli.as`, `kr8.cli.dis`, and
+`kr8.cli.sym`.
+
 ### M1.1 — Image model and `.k8` format
 
 - **Status:** `Done`
@@ -401,7 +406,7 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.2 — Lexer and line parser
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.1
 - **Estimate:** 0.5 day
 - **Files:** `src/asm/lexer.cpp`, `src/asm/parser.cpp`,
@@ -410,13 +415,13 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 **Work**
 
-- [ ] Tokenize labels (`name:`), mnemonics, directives, registers, numbers,
+- [x] Tokenize labels (`name:`), mnemonics, directives, registers, numbers,
       characters, strings, symbols, punctuation, and `;` comments.
-- [ ] Number forms: decimal, `0x`, `$`, `0b`; character escapes.
-- [ ] Parse one statement per line into `{label, mnemonic, operands, location}`.
-- [ ] Support a label and an instruction/directive on one line.
-- [ ] Diagnostics: file/line/column, message, source line, caret.
-- [ ] Tests: valid lines, comments, blank lines, bad tokens, unterminated
+- [x] Number forms: decimal, `0x`, `$`, `0b`; character escapes.
+- [x] Parse one statement per line into `{label, mnemonic, operands, location}`.
+- [x] Support a label and an instruction/directive on one line.
+- [x] Diagnostics: file/line/column, message, source line, caret.
+- [x] Tests: valid lines, comments, blank lines, bad tokens, unterminated
       strings, bad escapes.
 
 **Acceptance**
@@ -427,7 +432,7 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.3 — Expressions
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.2
 - **Estimate:** 0.5 day
 - **Files:** `src/asm/expression.cpp`, `tests/test_asm_expression.cpp`
@@ -435,12 +440,12 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 **Work**
 
-- [ ] Pratt/precedence parser: `+ - * / % << >> & ^ |`, unary `+ - ~`,
+- [x] Pratt/precedence parser: `+ - * / % << >> & ^ |`, unary `+ - ~`,
       parentheses.
-- [ ] Symbols and `.equ` constants.
-- [ ] 32-bit signed evaluation; division/remainder by zero diagnostic.
-- [ ] Range checks at the point of use (immediate/address/target).
-- [ ] Tests: precedence, unary, chars, symbol resolution, div0, out-of-range.
+- [x] Symbols and `.equ` constants.
+- [x] 32-bit signed evaluation; division/remainder by zero diagnostic.
+- [x] Range checks at the point of use (immediate/address/target).
+- [x] Tests: precedence, unary, chars, symbol resolution, div0, out-of-range.
 
 **Acceptance**
 
@@ -450,7 +455,7 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.4 — Two-pass assembler core
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.3
 - **Estimate:** 1 day
 - **Files:** `src/asm/assembler.cpp`, `tests/test_assembler.cpp`
@@ -458,17 +463,17 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 **Work**
 
-- [ ] Pass 1: parse, size instructions from syntax, place labels, evaluate
+- [x] Pass 1: parse, size instructions from syntax, place labels, evaluate
       `.org`/`.space`/`.equ`, classify Code/Data/Const, detect duplicates.
-- [ ] Pass 2: resolve operands, encode, fill RAM, code map, line rows, symbol
+- [x] Pass 2: resolve operands, encode, fill RAM, code map, line rows, symbol
       values/sizes, `image_high`, stack headroom.
-- [ ] Directives: `.org`, `.byte`, `.word`, `.ascii`, `.asciz`, `.space`,
+- [x] Directives: `.org`, `.byte`, `.word`, `.ascii`, `.asciz`, `.space`,
       `.equ`, `.entry`.
-- [ ] Operand forms: register, `#expr`, `[expr]`, `[B]`, branch target.
-- [ ] Absolute branch/call targets; no relaxation.
-- [ ] Errors: backward `.org`, `0xFF` crossing, image overflow, label without
+- [x] Operand forms: register, `#expr`, `[expr]`, `[B]`, branch target.
+- [x] Absolute branch/call targets; no relaxation.
+- [x] Errors: backward `.org`, `0xFF` crossing, image overflow, label without
       code/data, undefined symbol, bad range.
-- [ ] Tests: all directives, labels, forward refs, code/data classification,
+- [x] Tests: all directives, labels, forward refs, code/data classification,
       entry, headroom warning, error cases.
 
 **Acceptance**
@@ -479,7 +484,7 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.5 — Listing, summary, and `kr8 as`
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.4
 - **Estimate:** 0.5 day
 - **Files:** `src/asm/listing.cpp`, `src/cli/main.cpp`,
@@ -488,12 +493,12 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 **Work**
 
-- [ ] Listing: address, bytes, source line; symbols; image summary.
-- [ ] Summary: code bytes, data bytes, `image_high`, stack headroom.
-- [ ] `kr8 as <file.asm>` default output `<source>.k8`; `-o`, `--raw`,
+- [x] Listing: address, bytes, source line; symbols; image summary.
+- [x] Summary: code bytes, data bytes, `image_high`, stack headroom.
+- [x] `kr8 as <file.asm>` default output `<source>.k8`; `-o`, `--raw`,
       `--no-source`, `-l`, `-q`.
-- [ ] Exit code 1 on assembly error; no output file on error.
-- [ ] Tests: output path, listing, raw export, quiet, failure cases.
+- [x] Exit code 1 on assembly error; no output file on error.
+- [x] Tests: output path, listing, raw export, quiet, failure cases.
 
 **Acceptance**
 
@@ -503,7 +508,7 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.6 — Disassembler library
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.4
 - **Estimate:** 0.5 day
 - **Files:** `include/kr8/disassembler.hpp`, `src/dis/disassembler.cpp`,
@@ -512,12 +517,12 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 **Work**
 
-- [ ] Decode from the code map; never decode data bytes as instructions.
-- [ ] Produce `DecodedInstruction {address, size, bytes, text, line, valid}`.
-- [ ] Symbol resolution for branch/call targets and `[addr]` operands.
-- [ ] Data ranges: `.byte`/`.asciz` display where appropriate.
-- [ ] Help text from the ISA table.
-- [ ] Tests: every opcode, symbols, data regions, raw fallback.
+- [x] Decode from the code map; never decode data bytes as instructions.
+- [x] Produce `DecodedInstruction {address, size, bytes, text, line, valid}`.
+- [x] Symbol resolution for branch/call targets and `[addr]` operands.
+- [x] Data ranges: `.byte`/`.asciz` display where appropriate.
+- [x] Help text from the ISA table.
+- [x] Tests: every opcode, symbols, data regions, raw fallback.
 
 **Acceptance**
 
@@ -527,7 +532,7 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.7 — `kr8 dis` and `kr8 sym`
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.6
 - **Estimate:** 0.5 day
 - **Files:** `src/cli/main.cpp`, `tests/test_cli_dis.cpp`
@@ -535,10 +540,10 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 **Work**
 
-- [ ] Format `ADDR/BYTES/INSTRUCTION` columns.
-- [ ] Options: `--raw`, `--base`, `--end`, `--symbols`, `--source`, `--data`.
-- [ ] `kr8 sym <image>` prints the symbol table.
-- [ ] Tests: normal, raw, symbol, source, data, bad input.
+- [x] Format `ADDR/BYTES/INSTRUCTION` columns.
+- [x] Options: `--raw`, `--base`, `--end`, `--symbols`, `--source`, `--data`.
+- [x] `kr8 sym <image>` prints the symbol table.
+- [x] Tests: normal, raw, symbol, source, data, bad input.
 
 **Acceptance**
 
@@ -548,7 +553,7 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.8 — M1 test gate
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M1.1–M1.7
 - **Estimate:** 0.25 day
 - **Files:** `tests/`, `examples/`, `kr8-impl.md`
@@ -556,16 +561,20 @@ magic, checksum, truncation, raw `.bin`, and file I/O.
 
 **Work**
 
-- [ ] Assemble all examples.
-- [ ] Round-trip every image through read/write.
-- [ ] Disassemble every example and check symbols/data.
-- [ ] Run Windows and Linux suites; ASan/UBSan on Linux.
-- [ ] Update dashboard and work log.
+- [x] Assemble all examples.
+- [x] Round-trip every image through read/write.
+- [x] Disassemble every example and check symbols/data.
+- [x] Run Windows and Linux suites; ASan/UBSan on Linux.
+- [x] Update dashboard and work log.
 
 **Acceptance**
 
 - All M1 tests pass; no known P0/P1 defect.
 - The examples are checked in and assemble reproducibly.
+
+Verified: all seven examples assemble, write/read round-trip, and disassemble;
+90 C++ tests and 5 CTest targets pass on Windows MSVC, Linux GCC, and Linux
+ASan/UBSan; zero warnings.
 
 ---
 
@@ -1344,6 +1353,13 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T11:54:27-08:00** — M1 gate passed: 90 C++ tests and 5 CTest
+  targets on Windows, Linux GCC, and Linux ASan/UBSan; all seven examples
+  assemble/round-trip/disassemble; zero warnings. M1 complete. Next: M2.1.
+- **2026-11-03T11:53:22-08:00** — M1.2–M1.7 done: lexer/parser, expression
+  evaluator, two-pass assembler, listing/summary, `kr8 as`, symbol-aware
+  disassembler, and `kr8 dis`/`kr8 sym`. All seven examples assemble; 89 C++
+  tests and 5 CTest targets pass. Next: M1.8.
 - **2026-11-03T11:47:26-08:00** — M1.1 done: `.k8` image model, CRC32,
   reader/writer, raw `.bin` helpers, and normative `docs/image-format.md`.
   9 image tests pass (71 total). Next: M1.2.
@@ -1389,13 +1405,13 @@ Timestamps use `local-datetime` and the host time zone
 | M0.7 | Machine wrapper | M0.6 | `Done` |
 | M0.8 | M0 test gate | M0.1–M0.7 | `Done` |
 | M1.1 | Image model and `.k8` format | M0.8 | `Done` |
-| M1.2 | Lexer and line parser | M1.1 | `Not started` |
-| M1.3 | Expressions | M1.2 | `Not started` |
-| M1.4 | Two-pass assembler core | M1.3 | `Not started` |
-| M1.5 | Listing, summary, `kr8 as` | M1.4 | `Not started` |
-| M1.6 | Disassembler library | M1.4 | `Not started` |
-| M1.7 | `kr8 dis` and `kr8 sym` | M1.6 | `Not started` |
-| M1.8 | M1 test gate | M1.1–M1.7 | `Not started` |
+| M1.2 | Lexer and line parser | M1.1 | `Done` |
+| M1.3 | Expressions | M1.2 | `Done` |
+| M1.4 | Two-pass assembler core | M1.3 | `Done` |
+| M1.5 | Listing, summary, `kr8 as` | M1.4 | `Done` |
+| M1.6 | Disassembler library | M1.4 | `Done` |
+| M1.7 | `kr8 dis` and `kr8 sym` | M1.6 | `Done` |
+| M1.8 | M1 test gate | M1.1–M1.7 | `Done` |
 | M2.1 | Runner and `kr8 run` | M1.8 | `Not started` |
 | M2.2 | Fault diagnostics and edge cases | M2.1 | `Not started` |
 | M2.3 | Golden examples and CLI tests | M2.2 | `Not started` |
@@ -1441,11 +1457,11 @@ Use this at each gate; copy the relevant block into the work log.
 
 ### M1 checkpoint
 
-- [ ] `.k8` round-trips, CRC validates, corruption rejected.
-- [ ] All examples assemble with expected symbols/lines.
-- [ ] Listing/summary/raw output correct.
-- [ ] Disassembly is symbol-aware and does not decode data.
-- [ ] `as`, `dis`, `sym` CLI tests pass.
+- [x] `.k8` round-trips, CRC validates, corruption rejected.
+- [x] All examples assemble with expected symbols/lines.
+- [x] Listing/summary/raw output correct.
+- [x] Disassembly is symbol-aware and does not decode data.
+- [x] `as`, `dis`, `sym` CLI tests pass.
 
 ### M2 checkpoint
 
