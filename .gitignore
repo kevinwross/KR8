@@ -1,0 +1,42 @@
+# Build outputs
+build/
+out/
+dist/
+cmake-build-*/
+
+# IDE / editor state
+.vs/
+.vscode/
+*.user
+*.suo
+*.swp
+*~
+
+# CMake
+CMakeUserPresets.json
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Compiled objects and binaries
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+*.exp
+*.app
+*.appimage
+*.AppImage
+
+# Generated assembly outputs (regenerate with kr8 as)
+examples/*.k8
+examples/*.bin
+examples/*.lst
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
