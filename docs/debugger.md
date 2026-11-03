@@ -101,9 +101,11 @@ breakpoint is checked again.
 - Click a code symbol to set PC to its address. Click a data symbol to select
   it in the memory map. Right-click a symbol to toggle an address breakpoint.
 - The call stack is a debugger-side shadow stack updated by `CALL`/`RET`.
-  `#0` is the current function; clicking a frame moves PC to the caller's call
-  instruction. It is exact for structured code and labelled "best effort" in
-  the plan; `RET` without `CALL` and return-address mismatches are reported.
+  Each frame uses two lines: the function/index, then its source line and
+  `ret` or `pc` value. `#0` is the current function; clicking a frame moves PC
+  to the caller's call instruction. It is exact for structured code and labelled
+  "best effort" in the plan; `RET` without `CALL` and return-address mismatches
+  are reported.
 - Click the console input, type, and press Enter. The text plus a newline is
   queued for `IN`. `Esc` leaves the input field.
 

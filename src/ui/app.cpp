@@ -47,6 +47,27 @@ void text_center(Canvas& canvas, const Rect& rect, std::string_view text,
                 text, color, role);
 }
 
+std::string fit_text(Canvas& canvas, std::string_view text, int max_width,
+                     FontRole role) {
+    if (max_width <= 0) {
+        return {};
+    }
+    if (canvas.measure(text, role).width <= max_width) {
+        return std::string(text);
+    }
+    std::string fitted;
+    for (const char value : text) {
+        std::string candidate = fitted;
+        candidate.push_back(value);
+        candidate += "...";
+        if (canvas.measure(candidate, role).width > max_width) {
+            break;
+        }
+        fitted.push_back(value);
+    }
+    return fitted + "...";
+}
+
 Color kind_color(SymbolKind kind) {
     switch (kind) {
         case SymbolKind::Code: return kAccent;
@@ -812,7 +833,7 @@ void App::draw_stack(Canvas& canvas, const Snapshot& snapshot) {
                     "No frames.", kTextDim, FontRole::MonoSmall);
         return;
     }
-    const int row_height = 20;
+    const int row_height = 30;
     const int visible = std::max(1, stack_text_.height() / row_height);
     stack_scroll_ = std::clamp(
         stack_scroll_, 0,
@@ -832,16 +853,30 @@ void App::draw_stack(Canvas& canvas, const Snapshot& snapshot) {
         if (frame.index == 0) {
             canvas.fill_rect(rect, kStmt);
         }
-        const std::string line =
-            "#" + std::to_string(frame.index) + " " + frame.function +
-            " line " + std::to_string(frame.line);
-        canvas.text(stack_text_.left + 6, y + 2, line,
+        const std::string heading =
+            "#" + std::to_string(frame.index) + " " + frame.function;
+        canvas.text(stack_text_.left + 6, y + 2,
+                    fit_text(canvas, heading, stack_text_.width() - 12,
+                             FontRole::MonoSmall),
                     frame.index == 0 ? kText : kTextDim,
                     FontRole::MonoSmall);
-        if (frame.return_address != 0) {
-            text_right(canvas, stack_text_.right - 6, y + 2,
-                       "ret " + hex2(frame.return_address), kTextDim,
-                       FontRole::MonoSmall);
+
+        const std::string line_text =
+            "line " + (frame.line > 0 ? std::to_string(frame.line)
+                                      : std::string("-"));
+        canvas.text(stack_text_.left + 14, y + 16, line_text, kTextDim,
+                    FontRole::MonoSmall);
+        const std::string detail =
+            frame.return_address != 0
+                ? "ret " + hex2(frame.return_address)
+                : "pc " + hex2(frame.pc);
+        const int detail_width =
+            canvas.measure(detail, FontRole::MonoSmall).width;
+        if (canvas.measure(line_text, FontRole::MonoSmall).width +
+                detail_width + 30 <=
+            stack_text_.width()) {
+            text_right(canvas, stack_text_.right - 6, y + 16, detail,
+                       kTextDim, FontRole::MonoSmall);
         }
     }
     canvas.pop_clip();

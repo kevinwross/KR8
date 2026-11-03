@@ -1230,9 +1230,9 @@ Linux x64 AppImage, CI, and the final v1 verification.
 - The AppImage runs on a clean Ubuntu 22.04 x64 environment.
 - No missing runtime dependency.
 
-Verified on Windows: `kr8.exe` is 654,336 bytes, linked `/MT`, with only
+Verified on Windows: `kr8.exe` is 657,408 bytes, linked `/MT`, with only
 `USER32.dll`, `GDI32.dll`, `COMDLG32.dll`, and `KERNEL32.dll` as dependencies.
-The zip is 1,389,224 bytes and runs from an empty temporary directory. The Linux
+The zip is 1,390,999 bytes and runs from an empty temporary directory. The Linux
 AppImage is 2.1 MiB, built in an Ubuntu 22.04 rootfs; `objdump -T` shows a
 maximum of `GLIBC_2.34` and `GLIBCXX_3.4.29`, and `ldd` needs only libstdc++,
 libm, libgcc_s, and libc. The AppImage passes `--version`, `run
@@ -1388,10 +1388,15 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T15:08:29-08:00** — Fixed the call-stack pane overlap: frames now
+  use a two-line row (function/index, then source line plus `ret`/`pc`) and the
+  heading is clipped to the pane. Added a nested three-frame regression test;
+  135 C++ tests, Windows CTest, and Linux UI/ASan tests pass. `v0.1.0`
+  artifacts were refreshed with the fix.
 - **2026-11-03T12:43:00-08:00** — M6 and v1 complete. Windows Debug/Release
   pass 134 C++ tests and 6 CTest targets; Linux UI passes 8 targets including
   Xvfb and platform boundary; ASan/UBSan passes 7. Fresh clones build/test.
-  Windows zip (654,336-byte exe, 1,389,224-byte zip) and a 2.1 MiB Ubuntu
+  Windows zip (657,408-byte exe, 1,390,999-byte zip) and a 2.1 MiB Ubuntu
   22.04 AppImage (GLIBC 2.34 maximum) were exercised, including the AppImage UI.
   All 44 tasks and the Definition of Done are complete. Tag `v0.1.0`.
 - **2026-11-03T12:29:03-08:00** — M5 gate passed on Linux: static SDL3 UI,

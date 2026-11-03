@@ -40,6 +40,36 @@ TEST(session_step_instruction_and_frames) {
     CHECK_EQ(snapshot.frames[1].function, std::string("start"));
     CHECK_EQ(snapshot.frames[1].line, 3);
     CHECK_EQ(snapshot.frames[1].pc, 2);
+    CHECK_EQ(snapshot.frames[1].return_address, 4);
+}
+
+TEST(session_shadow_stack_records_nested_callers) {
+    Session session;
+    std::string error;
+    const char* source =
+        "start:\n"
+        "  CALL middle\n"
+        "  HLT\n"
+        "middle:\n"
+        "  CALL leaf\n"
+        "  RET\n"
+        "leaf:\n"
+        "  RET\n";
+    CHECK(session.assemble_source(source, "nested.asm", error));
+    CHECK(session.step_instruction());  // CALL middle
+    CHECK(session.step_instruction());  // CALL leaf
+    const Snapshot snapshot = session.snapshot();
+    CHECK_EQ(snapshot.frames.size(), 3u);
+    CHECK_EQ(snapshot.frames[0].function, std::string("leaf"));
+    CHECK_EQ(snapshot.frames[0].line, 8);
+    CHECK_EQ(snapshot.frames[1].function, std::string("middle"));
+    CHECK_EQ(snapshot.frames[1].line, 5);
+    CHECK_EQ(snapshot.frames[1].pc, 3);
+    CHECK_EQ(snapshot.frames[1].return_address, 5);
+    CHECK_EQ(snapshot.frames[2].function, std::string("start"));
+    CHECK_EQ(snapshot.frames[2].line, 2);
+    CHECK_EQ(snapshot.frames[2].pc, 0);
+    CHECK_EQ(snapshot.frames[2].return_address, 2);
 }
 
 TEST(session_step_instruction_over_a_call) {
