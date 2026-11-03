@@ -25,6 +25,7 @@ endif()
 
 add_library(kr8_core STATIC
   src/core/version.cpp
+  src/isa/isa.cpp
 )
 
 target_include_directories(kr8_core PUBLIC

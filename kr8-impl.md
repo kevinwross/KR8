@@ -6,7 +6,7 @@ Implementation started: 2026-11-03
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
 Current milestone: **M0 — Skeleton and machine**  
-Current task: **M0.2 — Shared ISA table**
+Current task: **M0.3 — Memory, registers, fetch/decode**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -49,6 +49,9 @@ Every task has:
 7. Keep `kr8-plan.md` frozen. A design change needs a plan edit and a work-log
    entry, not a silent implementation divergence.
 8. Prefer small, reviewable changes: one task or one coherent slice at a time.
+9. Commit at meaningful checkpoints (a completed task or a coherent slice) and
+   at the end of every completed milestone. Use the repository's configured
+   global git identity; do not set a local `user.name` or `user.email`.
 
 ### Status values
 
@@ -85,11 +88,11 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T11:38:23-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T11:40:34-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
-| M0 — Skeleton and machine | `In progress` | 2026-11-03 | — | M0.2 |
+| M0 — Skeleton and machine | `In progress` | 2026-11-03 | — | M0.3 |
 | M1 — Image, assembler, disassembler | `Not started` | — | — | M1.1 |
 | M2 — VM and CLI | `Not started` | — | — | M2.1 |
 | M3 — Debug session | `Not started` | — | — | M3.1 |
@@ -97,9 +100,9 @@ Last updated: **2026-11-03T11:38:23-08:00** (America/Los_Angeles)
 | M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 1 done, 0 in progress, 0 blocked.  
-**Code:** M0.1 skeleton, version, CLI stub, test harness.  
-**Current focus:** M0.2.
+**Tasks:** 44 total, 2 done, 0 in progress, 0 blocked.  
+**Code:** M0.1 skeleton + M0.2 ISA table and normative `docs/isa.md`.  
+**Current focus:** M0.3.
 
 ### Critical path
 
@@ -175,7 +178,7 @@ the VS generator was used for this checkpoint.
 
 ### M0.2 — Shared ISA table
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.1
 - **Estimate:** 0.5 day
 - **Files:** `include/kr8/isa.hpp`, `src/isa/isa.cpp`, `tests/test_isa.cpp`,
@@ -184,16 +187,16 @@ the VS generator was used for this checkpoint.
 
 **Work**
 
-- [ ] Define `Op`, `OperandKind`, flag masks, and `OpcodeInfo`.
-- [ ] Encode all 63 instructions from plan §3.6: opcode, mnemonic, size,
+- [x] Define `Op`, `OperandKind`, flag masks, and `OpcodeInfo`.
+- [x] Encode all 63 instructions from plan §3.6: opcode, mnemonic, size,
       operand kind, modified flags, help text, aliases.
-- [ ] Mark all reserved opcodes illegal.
-- [ ] Implement lookup by opcode and case-insensitive mnemonic; alias map
+- [x] Mark all reserved opcodes illegal.
+- [x] Implement lookup by opcode and case-insensitive mnemonic; alias map
       (`BRA`, `BEQ`, …, `BLE`).
-- [ ] Add `instruction_help()` and canonical mnemonic formatting.
-- [ ] Create `docs/isa.md` skeleton with the register/flag/memory model and a
+- [x] Add `instruction_help()` and canonical mnemonic formatting.
+- [x] Create `docs/isa.md` skeleton with the register/flag/memory model and a
       pointer to the table as the source of truth.
-- [ ] Tests: every opcode unique, every size/operand kind correct, 63
+- [x] Tests: every opcode unique, every size/operand kind correct, 63
       instructions, aliases resolve, reserved opcodes fail lookup.
 
 **Acceptance**
@@ -202,6 +205,9 @@ the VS generator was used for this checkpoint.
 - Assembler and disassembler can consume the same table without translation
   tables.
 - `docs/isa.md` and the table agree.
+
+Verified: 15 tests pass, including 12 ISA-specific tests; reserved-opcode
+lookups return null; `docs/isa.md` is now the normative reference.
 
 ### M0.3 — Memory, registers, fetch/decode
 
@@ -1330,6 +1336,9 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T11:40:34-08:00** — M0.2 done: shared 63-entry ISA table with
+  opcode/size/operand/flags/help metadata, alias lookup, instruction formatting,
+  and normative `docs/isa.md`. 15 tests pass (12 ISA-specific). Next: M0.3.
 - **2026-11-03T11:38:23-08:00** — M0.1 done: created the project skeleton,
   CMake/Presets, MIT licence, README, version API, CLI `version`/`help` stubs,
   and the test harness. Built with `windows-vs2026`; CTest `kr8.tests` passed
@@ -1356,7 +1365,7 @@ Timestamps use `local-datetime` and the host time zone
 | Task | Title | Depends on | Status |
 |---|---|---|---|
 | M0.1 | Repository skeleton and CMake | — | `Done` |
-| M0.2 | Shared ISA table | M0.1 | `Not started` |
+| M0.2 | Shared ISA table | M0.1 | `Done` |
 | M0.3 | Memory, registers, fetch/decode | M0.2 | `Not started` |
 | M0.4 | ALU and flags | M0.3 | `Not started` |
 | M0.5 | Loads, stores, stack, control flow | M0.4 | `Not started` |

@@ -1,6 +1,7 @@
 add_executable(kr8_tests
   main.cpp
   test_smoke.cpp
+  test_isa.cpp
 )
 
 target_include_directories(kr8_tests PRIVATE
