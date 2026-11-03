@@ -6,7 +6,7 @@ Implementation started: 2026-11-03
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
 Current milestone: **M1 — Image, assembler, disassembler**  
-Current task: **M1.1 — Image model and `.k8` format**
+Current task: **M1.2 — Lexer and line parser**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -88,22 +88,22 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T11:45:02-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T11:47:26-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
 | M0 — Skeleton and machine | `Done` | 2026-11-03 | 2026-11-03 | — |
-| M1 — Image, assembler, disassembler | `Not started` | — | — | M1.1 |
+| M1 — Image, assembler, disassembler | `In progress` | 2026-11-03 | — | M1.2 |
 | M2 — VM and CLI | `Not started` | — | — | M2.1 |
 | M3 — Debug session | `Not started` | — | — | M3.1 |
 | M4 — UI foundation and Win32 | `Not started` | — | — | M4.1 |
 | M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 8 done, 0 in progress, 0 blocked.  
-**Code:** complete 8-bit CPU, ISA table, memory, machine wrapper, console/input
-queue, and 62 tests on Windows and Linux (including ASan/UBSan).  
-**Current focus:** M1.1.
+**Tasks:** 44 total, 9 done, 0 in progress, 0 blocked.  
+**Code:** M0 core plus the `.k8` image model, CRC, reader/writer, and raw
+`.bin` support.  
+**Current focus:** M1.2.
 
 ### Critical path
 
@@ -370,7 +370,7 @@ a symbol-aware disassembler, and the `as`/`dis`/`sym` CLI commands.
 
 ### M1.1 — Image model and `.k8` format
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M0.8
 - **Estimate:** 0.75 day
 - **Files:** `include/kr8/image.hpp`, `src/image/image.cpp`,
@@ -379,15 +379,15 @@ a symbol-aware disassembler, and the `as`/`dis`/`sym` CLI commands.
 
 **Work**
 
-- [ ] `Image` struct: RAM, code map, entry, `image_high`, symbols, line rows,
+- [x] `Image` struct: RAM, code map, entry, `image_high`, symbols, line rows,
       sources, source text, CRC.
-- [ ] Writer: 32-byte header, 256-byte RAM, 32-byte code map, symbols, lines,
+- [x] Writer: 32-byte header, 256-byte RAM, 32-byte code map, symbols, lines,
       sources, string table, source blob, CRC32.
-- [ ] Reader: validate magic/version/flags/counts/offsets/CRC; reject
+- [x] Reader: validate magic/version/flags/counts/offsets/CRC; reject
       truncation and overflow.
-- [ ] `.bin` read/write helpers (short raw file zero-filled; long rejected).
-- [ ] Document the exact layout in `docs/image-format.md`.
-- [ ] Tests: round-trip, CRC mismatch, truncated file, bad offsets, `.bin`
+- [x] `.bin` read/write helpers (short raw file zero-filled; long rejected).
+- [x] Document the exact layout in `docs/image-format.md`.
+- [x] Tests: round-trip, CRC mismatch, truncated file, bad offsets, `.bin`
       round-trip.
 
 **Acceptance**
@@ -395,6 +395,9 @@ a symbol-aware disassembler, and the `as`/`dis`/`sym` CLI commands.
 - A populated `Image` round-trips byte-for-byte.
 - Corrupt/truncated files fail with a clear error, not a crash.
 - `docs/image-format.md` matches the implementation.
+
+Verified: 9 image tests pass (71 total); CRC32 known vector, round-trip, bad
+magic, checksum, truncation, raw `.bin`, and file I/O.
 
 ### M1.2 — Lexer and line parser
 
@@ -1341,6 +1344,9 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T11:47:26-08:00** — M1.1 done: `.k8` image model, CRC32,
+  reader/writer, raw `.bin` helpers, and normative `docs/image-format.md`.
+  9 image tests pass (71 total). Next: M1.2.
 - **2026-11-03T11:45:02-08:00** — M0 gate passed: 62 tests on Windows MSVC,
   Linux GCC, and Linux ASan/UBSan; zero warnings. M0 complete. Next: M1.1.
 - **2026-11-03T11:45:02-08:00** — M0.3–M0.7 done: memory/registers,
@@ -1382,7 +1388,7 @@ Timestamps use `local-datetime` and the host time zone
 | M0.6 | Console I/O and cycles | M0.5 | `Done` |
 | M0.7 | Machine wrapper | M0.6 | `Done` |
 | M0.8 | M0 test gate | M0.1–M0.7 | `Done` |
-| M1.1 | Image model and `.k8` format | M0.8 | `Not started` |
+| M1.1 | Image model and `.k8` format | M0.8 | `Done` |
 | M1.2 | Lexer and line parser | M1.1 | `Not started` |
 | M1.3 | Expressions | M1.2 | `Not started` |
 | M1.4 | Two-pass assembler core | M1.3 | `Not started` |

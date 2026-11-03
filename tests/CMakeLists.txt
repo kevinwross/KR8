@@ -2,6 +2,7 @@ add_executable(kr8_tests
   main.cpp
   test_smoke.cpp
   test_isa.cpp
+  test_image.cpp
   test_cpu_decode.cpp
   test_cpu_alu.cpp
   test_cpu_control.cpp
