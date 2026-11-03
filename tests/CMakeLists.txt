@@ -64,3 +64,29 @@ set_tests_properties(kr8.cli.run PROPERTIES
   DEPENDS kr8.cli.as
   PASS_REGULAR_EXPRESSION "Hello, KR8!"
 )
+
+if(TARGET kr8_ui_smoke AND UNIX)
+  find_program(KR8_XVFB_RUN xvfb-run)
+  find_program(KR8_XDOTOOL xdotool)
+  find_program(KR8_IMPORT import)
+  if(KR8_XVFB_RUN AND KR8_XDOTOOL AND KR8_IMPORT)
+    add_test(NAME kr8.ui.smoke.linux
+      COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/ui_smoke_linux.sh"
+              "$<TARGET_FILE:kr8_ui_smoke>"
+              "${CMAKE_CURRENT_BINARY_DIR}/hello.k8"
+              "${CMAKE_CURRENT_BINARY_DIR}/ui-smoke.png"
+    )
+    set_tests_properties(kr8.ui.smoke.linux PROPERTIES
+      DEPENDS kr8.cli.as
+      LABELS "ui"
+      TIMEOUT 20
+    )
+  endif()
+endif()
+
+if(UNIX)
+  add_test(NAME kr8.platform.boundary
+    COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/platform_boundary.sh"
+  )
+  set_tests_properties(kr8.platform.boundary PROPERTIES LABELS "boundary")
+endif()

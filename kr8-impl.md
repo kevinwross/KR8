@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **M5 — SDL3/Linux**  
-Current task: **M5.1 — SDL3 canvas and window**
+Current milestone: **M6 — Polish, docs, packaging**  
+Current task: **M6.2 — Packaging**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -97,14 +97,13 @@ Last updated: **2026-11-03T12:15:21-08:00** (America/Los_Angeles)
 | M2 — VM and CLI | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M3 — Debug session | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M4 — UI foundation and Win32 | `Done` | 2026-11-03 | 2026-11-03 | — |
-| M5 — SDL3/Linux | `In progress` | 2026-11-03 | — | M5.1 |
-| M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
+| M5 — SDL3/Linux | `Done` | 2026-11-03 | 2026-11-03 | — |
+| M6 — Polish, docs, packaging | `In progress` | 2026-11-03 | — | M6.1 |
 
-**Tasks:** 44 total, 36 done, 0 in progress, 0 blocked.  
-**Code:** full CLI toolchain, portable debug session, and the Win32 debugger
-with all panes, stepping, breakpoints, editing, console, help, settings, and
-error overlay.  
-**Current focus:** M5.1.
+**Tasks:** 44 total, 41 done, 0 in progress, 0 blocked.  
+**Code:** full CLI toolchain, portable debug session, Win32 and SDL3 debuggers,
+and the Linux Xvfb smoke test.  
+**Current focus:** M6.2.
 
 ### Critical path
 
@@ -1089,7 +1088,7 @@ native dialogs with fallback, and Xvfb smoke tests.
 
 ### M5.1 — SDL3 canvas and window
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.11
 - **Estimate:** 2 days
 - **Files:** `src/platform/ui/sdl/sdl_canvas.cpp`,
@@ -1098,13 +1097,13 @@ native dialogs with fallback, and Xvfb smoke tests.
 
 **Work**
 
-- [ ] SDL3 video/window/event loop; software canvas.
-- [ ] stb_truetype glyph atlas; embedded fonts; same sizes as Win32.
-- [ ] Mouse/keyboard/text input; wheel; resize; focus.
-- [ ] Timers; DPI/logical coordinates.
-- [ ] Native file dialog with a built-in fallback.
-- [ ] Static SDL3 FetchContent wiring and `KR8_SDL3_SOURCE_DIR`.
-- [ ] Acceptance: window opens under Xvfb; text renders.
+- [x] SDL3 video/window/event loop; software canvas.
+- [x] stb_truetype glyph atlas; embedded fonts; same sizes as Win32.
+- [x] Mouse/keyboard/text input; wheel; resize; focus.
+- [x] Timers; DPI/logical coordinates.
+- [x] Native file dialog with a built-in fallback.
+- [x] Static SDL3 FetchContent wiring and `KR8_SDL3_SOURCE_DIR`.
+- [x] Acceptance: window opens under Xvfb; text renders.
 
 **Acceptance**
 
@@ -1114,7 +1113,7 @@ native dialogs with fallback, and Xvfb smoke tests.
 
 ### M5.2 — Linux app integration
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M5.1
 - **Estimate:** 1 day
 - **Files:** `src/cli/main.cpp`, `src/ui/run_sdl.cpp`,
@@ -1123,12 +1122,12 @@ native dialogs with fallback, and Xvfb smoke tests.
 
 **Work**
 
-- [ ] No-argument Linux launch runs the UI in-process.
-- [ ] `ui` command and file argument.
-- [ ] Headless no-display error path.
-- [ ] Settings paths (`XDG_CONFIG_HOME`, `~/.config`).
-- [ ] `KR8_BUILD_UI=OFF` still builds the CLI.
-- [ ] Acceptance: load/assemble/run/break on Linux.
+- [x] No-argument Linux launch runs the UI in-process.
+- [x] `ui` command and file argument.
+- [x] Headless no-display error path.
+- [x] Settings paths (`XDG_CONFIG_HOME`, `~/.config`).
+- [x] `KR8_BUILD_UI=OFF` still builds the CLI.
+- [x] Acceptance: load/assemble/run/break on Linux.
 
 **Acceptance**
 
@@ -1138,7 +1137,7 @@ native dialogs with fallback, and Xvfb smoke tests.
 
 ### M5.3 — Linux parity tests and screenshots
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M5.2
 - **Estimate:** 0.5 day
 - **Files:** `tests/ui_smoke_linux.sh`, `docs/screenshots/*.png`
@@ -1146,10 +1145,10 @@ native dialogs with fallback, and Xvfb smoke tests.
 
 **Work**
 
-- [ ] Xvfb smoke: load, step, run, break, restart, breakpoints, edits.
-- [ ] Screenshots for README/docs.
-- [ ] Compare feature checklist with Win32.
-- [ ] Record commands.
+- [x] Xvfb smoke: load, step, run, break, restart, breakpoints, edits.
+- [x] Screenshots for README/docs.
+- [x] Compare feature checklist with Win32.
+- [x] Record commands.
 
 **Acceptance**
 
@@ -1158,17 +1157,17 @@ native dialogs with fallback, and Xvfb smoke tests.
 
 ### M5.4 — M5 test gate
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M5.1–M5.3
 - **Estimate:** 0.5 day
 - **Files:** `tests/`, `kr8-impl.md`
 
 **Work**
 
-- [ ] Full suite on Windows and Linux.
-- [ ] Platform-boundary check.
-- [ ] ASan/UBSan on Linux.
-- [ ] Update dashboard and work log.
+- [x] Full suite on Windows and Linux.
+- [x] Platform-boundary check.
+- [x] ASan/UBSan on Linux.
+- [x] Update dashboard and work log.
 
 **Acceptance**
 
@@ -1184,7 +1183,7 @@ Linux x64 AppImage, CI, and the final v1 verification.
 
 ### M6.1 — Documentation
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M5.4
 - **Estimate:** 1 day
 - **Files:** `README.md`, `docs/isa.md`, `docs/assembler.md`,
@@ -1194,14 +1193,14 @@ Linux x64 AppImage, CI, and the final v1 verification.
 
 **Work**
 
-- [ ] README: what KR8 is, build, quick start, commands, UI screenshots.
-- [ ] `docs/isa.md`: normative ISA, flags, memory, I/O, faults, cycles.
-- [ ] `docs/assembler.md`: syntax, directives, expressions, diagnostics.
-- [ ] `docs/image-format.md`: exact `.k8` layout.
-- [ ] `docs/debugger.md`: panes, shortcuts, breakpoints, editing.
-- [ ] `docs/curriculum.md`: lesson sequence with the examples.
-- [ ] `THIRD_PARTY_NOTICES.md`: fonts, SDL3, stb.
-- [ ] Verify every command and key in the docs against the build.
+- [x] README: what KR8 is, build, quick start, commands, UI screenshots.
+- [x] `docs/isa.md`: normative ISA, flags, memory, I/O, faults, cycles.
+- [x] `docs/assembler.md`: syntax, directives, expressions, diagnostics.
+- [x] `docs/image-format.md`: exact `.k8` layout.
+- [x] `docs/debugger.md`: panes, shortcuts, breakpoints, editing.
+- [x] `docs/curriculum.md`: lesson sequence with the examples.
+- [x] `THIRD_PARTY_NOTICES.md`: fonts, SDL3, stb.
+- [x] Verify every command and key in the docs against the build.
 
 **Acceptance**
 
@@ -1369,6 +1368,10 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T12:29:03-08:00** — M5 gate passed on Linux: static SDL3 UI,
+  Xvfb screenshot/parity, no-argument in-process launch, XDG settings, and the
+  `kr8.ui.smoke.linux` CTest. Windows and Linux suites pass; M5 complete.
+  Next: M6.1.
 - **2026-11-03T12:15:21-08:00** — M4 gate passed on Windows: Win32 UI with
   source/disassembly panes, registers/flags, full memory grid, symbols, call
   stack, console, run/break/restart, line and address breakpoints, register/
@@ -1463,11 +1466,11 @@ Timestamps use `local-datetime` and the host time zone
 | M4.9 | Errors, help, keyboard, settings | M4.5–M4.8 | `Done` |
 | M4.10 | Win32 smoke test and screenshots | M4.9 | `Done` |
 | M4.11 | M4 test gate | M4.1–M4.10 | `Done` |
-| M5.1 | SDL3 canvas and window | M4.11 | `Not started` |
-| M5.2 | Linux app integration | M5.1 | `Not started` |
-| M5.3 | Linux parity and screenshots | M5.2 | `Not started` |
-| M5.4 | M5 test gate | M5.1–M5.3 | `Not started` |
-| M6.1 | Documentation | M5.4 | `Not started` |
+| M5.1 | SDL3 canvas and window | M4.11 | `Done` |
+| M5.2 | Linux app integration | M5.1 | `Done` |
+| M5.3 | Linux parity and screenshots | M5.2 | `Done` |
+| M5.4 | M5 test gate | M5.1–M5.3 | `Done` |
+| M6.1 | Documentation | M5.4 | `Done` |
 | M6.2 | Packaging | M6.1 | `Not started` |
 | M6.3 | CI and release | M6.2 | `Not started` |
 | M6.4 | Final verification and v1 sign-off | M6.1–M6.3 | `Not started` |

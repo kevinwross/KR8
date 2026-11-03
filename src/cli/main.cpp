@@ -468,6 +468,7 @@ int main(int argc, char** argv) {
     }
 
 #ifdef KR8_HAS_UI
+#ifdef _WIN32
     {
         std::string error;
         if (kr8::ui::launch_ui_child({}, error)) {
@@ -475,6 +476,9 @@ int main(int argc, char** argv) {
         }
         std::cerr << "kr8: " << error << '\n';
     }
+#else
+    return kr8::ui::run_ui(argc, argv);
+#endif
 #endif
     std::cout << kUsage;
     return 0;
