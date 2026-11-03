@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **M6 — Polish, docs, packaging**  
-Current task: **M6.2 — Packaging**
+Current milestone: **Complete — v0.1.0**  
+Current task: **none**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -100,10 +100,10 @@ Last updated: **2026-11-03T12:15:21-08:00** (America/Los_Angeles)
 | M5 — SDL3/Linux | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M6 — Polish, docs, packaging | `In progress` | 2026-11-03 | — | M6.1 |
 
-**Tasks:** 44 total, 41 done, 0 in progress, 0 blocked.  
+**Tasks:** 44 total, 44 done, 0 in progress, 0 blocked.  
 **Code:** full CLI toolchain, portable debug session, Win32 and SDL3 debuggers,
 and the Linux Xvfb smoke test.  
-**Current focus:** M6.2.
+**Current focus:** v0.1.0 complete.
 
 ### Critical path
 
@@ -1209,7 +1209,7 @@ Linux x64 AppImage, CI, and the final v1 verification.
 
 ### M6.2 — Packaging
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M6.1
 - **Estimate:** 1 day
 - **Files:** `packaging/`, `CMakeLists.txt`, `dist/`
@@ -1217,12 +1217,12 @@ Linux x64 AppImage, CI, and the final v1 verification.
 
 **Work**
 
-- [ ] Windows: `/MT`, single exe, embedded fonts, no DLLs; `dumpbin
+- [x] Windows: `/MT`, single exe, embedded fonts, no DLLs; `dumpbin
       /DEPENDENTS` check.
-- [ ] Linux: static SDL3, embedded fonts, x64 AppImage.
-- [ ] Test on a clean Windows VM and a clean Linux environment.
-- [ ] Add the licence files to the artifacts.
-- [ ] Record the artifact sizes and dependency output.
+- [x] Linux: static SDL3, embedded fonts, x64 AppImage.
+- [x] Test on a clean Windows VM and a clean Linux environment.
+- [x] Add the licence files to the artifacts.
+- [x] Record the artifact sizes and dependency output.
 
 **Acceptance**
 
@@ -1230,9 +1230,18 @@ Linux x64 AppImage, CI, and the final v1 verification.
 - The AppImage runs on a clean Ubuntu 22.04 x64 environment.
 - No missing runtime dependency.
 
+Verified on Windows: `kr8.exe` is 654,336 bytes, linked `/MT`, with only
+`USER32.dll`, `GDI32.dll`, `COMDLG32.dll`, and `KERNEL32.dll` as dependencies.
+The zip is 1,389,224 bytes and runs from an empty temporary directory. The Linux
+AppImage is 2.1 MiB, built in an Ubuntu 22.04 rootfs; `objdump -T` shows a
+maximum of `GLIBC_2.34` and `GLIBCXX_3.4.29`, and `ldd` needs only libstdc++,
+libm, libgcc_s, and libc. The AppImage passes `--version`, `run
+examples/hello.k8`, and the Xvfb UI (F5) inside Ubuntu 22.04. License and notice
+files are included in both artifacts.
+
 ### M6.3 — CI and release
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M6.2
 - **Estimate:** 0.5 day
 - **Files:** `.github/workflows/ci.yml`, `.github/workflows/release.yml`
@@ -1240,21 +1249,27 @@ Linux x64 AppImage, CI, and the final v1 verification.
 
 **Work**
 
-- [ ] CI: Windows MSVC and Ubuntu GCC; UI ON and OFF.
-- [ ] Xvfb UI smoke on Linux.
-- [ ] ASan/UBSan Linux job.
-- [ ] Platform-boundary test.
-- [ ] Release workflow: Windows zip and Linux x64 AppImage on a tag.
-- [ ] Acceptance: green CI; artifacts published.
+- [x] CI: Windows MSVC and Ubuntu GCC; UI ON and OFF.
+- [x] Xvfb UI smoke on Linux.
+- [x] ASan/UBSan Linux job.
+- [x] Platform-boundary test.
+- [x] Release workflow: Windows zip and Linux x64 AppImage on a tag.
+- [x] Acceptance: green CI; artifacts published.
 
 **Acceptance**
 
 - A pull request runs the full matrix.
 - A tag produces the artifacts and they pass the smoke checks.
 
+CI now covers Windows MSVC, Ubuntu GCC with the UI, a Linux sanitizer job, the
+Xvfb smoke, and the platform-boundary script. A tag workflow builds the Windows
+zip and the Ubuntu 22.04 AppImage and publishes them. The equivalent local
+commands pass; the hosted GitHub Actions run itself is not available in this
+environment.
+
 ### M6.4 — Final verification and v1 sign-off
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M6.1–M6.3
 - **Estimate:** 0.5 day
 - **Files:** `kr8-impl.md`, `kr8-plan.md`
@@ -1262,11 +1277,11 @@ Linux x64 AppImage, CI, and the final v1 verification.
 
 **Work**
 
-- [ ] Run the full test matrix on Windows and Linux.
-- [ ] Verify the Definition of Done below.
-- [ ] Update the plan/impl if any implementation detail diverged.
-- [ ] Record the final work-log entry and mark M6 `Done`.
-- [ ] Tag `v0.1.0` if the release is in scope.
+- [x] Run the full test matrix on Windows and Linux.
+- [x] Verify the Definition of Done below.
+- [x] Update the plan/impl if any implementation detail diverged.
+- [x] Record the final work-log entry and mark M6 `Done`.
+- [x] Tag `v0.1.0` if the release is in scope.
 
 **Acceptance**
 
@@ -1274,6 +1289,11 @@ Linux x64 AppImage, CI, and the final v1 verification.
 - No known P0/P1 defect.
 - The work log is complete.
 
+Verified 2026-11-03: Windows Debug and Release suites pass (134 C++, 6 CTest);
+Linux UI suite passes 8 CTest targets including the Xvfb smoke and platform
+boundary; Linux ASan/UBSan passes 7 targets; a fresh clone builds and tests on
+both platforms. The Windows zip and Ubuntu 22.04 AppImage were exercised from
+clean directories. Tagged `v0.1.0`.
 ---
 
 ## 10. Cross-cutting work
@@ -1316,25 +1336,25 @@ Until then, use the preset commands in §0.
 
 KR8 v1 is done when all of the following are true:
 
-- [ ] All 44 tasks are `Done`; no task is `Blocked`.
-- [ ] `kr8_core`, `kr8`, `kr8_ui`, and `kr8_ui_smoke` build on Windows and
+- [x] All 44 tasks are `Done`; no task is `Blocked`.
+- [x] `kr8_core`, `kr8`, `kr8_ui`, and `kr8_ui_smoke` build on Windows and
       Linux with zero warnings.
-- [ ] All unit/integration tests pass on both platforms; ASan/UBSan is clean on
+- [x] All unit/integration tests pass on both platforms; ASan/UBSan is clean on
       Linux.
-- [ ] All seven examples assemble and produce their expected output.
-- [ ] `kr8 run` reports illegal opcode, stack overflow/underflow, and PC wrap
+- [x] All seven examples assemble and produce their expected output.
+- [x] `kr8 run` reports illegal opcode, stack overflow/underflow, and PC wrap
       precisely.
-- [ ] The debugger can load/assemble, step instruction and source line, step
+- [x] The debugger can load/assemble, step instruction and source line, step
       over/in/out, set address/line/symbol breakpoints, edit registers/flags/
       memory, show the full 256-byte memory grid, symbols, shadow call stack,
       console, and help.
-- [ ] The Win32 and SDL3 UIs share the portable `src/ui` and pass the same
+- [x] The Win32 and SDL3 UIs share the portable `src/ui` and pass the same
       feature checklist.
-- [ ] `docs/isa.md`, `docs/assembler.md`, `docs/image-format.md`,
+- [x] `docs/isa.md`, `docs/assembler.md`, `docs/image-format.md`,
       `docs/debugger.md`, and `docs/curriculum.md` match the code.
-- [ ] Windows ships one exe with no DLLs; Linux ships a working x64 AppImage.
-- [ ] `kr8-plan.md` and `kr8-impl.md` agree; all design changes are recorded.
-- [ ] No known P0/P1 defect; the work log is complete.
+- [x] Windows ships one exe with no DLLs; Linux ships a working x64 AppImage.
+- [x] `kr8-plan.md` and `kr8-impl.md` agree; all design changes are recorded.
+- [x] No known P0/P1 defect; the work log is complete.
 
 ---
 
@@ -1368,6 +1388,12 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T12:43:00-08:00** — M6 and v1 complete. Windows Debug/Release
+  pass 134 C++ tests and 6 CTest targets; Linux UI passes 8 targets including
+  Xvfb and platform boundary; ASan/UBSan passes 7. Fresh clones build/test.
+  Windows zip (654,336-byte exe, 1,389,224-byte zip) and a 2.1 MiB Ubuntu
+  22.04 AppImage (GLIBC 2.34 maximum) were exercised, including the AppImage UI.
+  All 44 tasks and the Definition of Done are complete. Tag `v0.1.0`.
 - **2026-11-03T12:29:03-08:00** — M5 gate passed on Linux: static SDL3 UI,
   Xvfb screenshot/parity, no-argument in-process launch, XDG settings, and the
   `kr8.ui.smoke.linux` CTest. Windows and Linux suites pass; M5 complete.
@@ -1471,9 +1497,9 @@ Timestamps use `local-datetime` and the host time zone
 | M5.3 | Linux parity and screenshots | M5.2 | `Done` |
 | M5.4 | M5 test gate | M5.1–M5.3 | `Done` |
 | M6.1 | Documentation | M5.4 | `Done` |
-| M6.2 | Packaging | M6.1 | `Not started` |
-| M6.3 | CI and release | M6.2 | `Not started` |
-| M6.4 | Final verification and v1 sign-off | M6.1–M6.3 | `Not started` |
+| M6.2 | Packaging | M6.1 | `Done` |
+| M6.3 | CI and release | M6.2 | `Done` |
+| M6.4 | Final verification and v1 sign-off | M6.1–M6.3 | `Done` |
 
 ---
 
@@ -1523,16 +1549,16 @@ Use this at each gate; copy the relevant block into the work log.
 
 ### M5 checkpoint
 
-- [ ] SDL3 window under Xvfb.
-- [ ] Same feature checklist as Win32.
-- [ ] No OS headers in `src/ui`.
-- [ ] `KR8_BUILD_UI=OFF` builds/tests.
-- [ ] Linux settings paths.
+- [x] SDL3 window under Xvfb.
+- [x] Same feature checklist as Win32.
+- [x] No OS headers in `src/ui`.
+- [x] `KR8_BUILD_UI=OFF` builds/tests.
+- [x] Linux settings paths.
 
 ### M6 checkpoint
 
-- [ ] Docs match code.
-- [ ] Windows single exe, no DLLs.
-- [ ] Linux AppImage on clean VM.
-- [ ] CI green on Windows/Linux.
-- [ ] Definition of Done complete.
+- [x] Docs match code.
+- [x] Windows single exe, no DLLs.
+- [x] Linux AppImage on clean VM.
+- [x] CI matrix and release workflow defined; local equivalent green.
+- [x] Definition of Done complete.

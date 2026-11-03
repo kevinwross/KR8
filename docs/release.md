@@ -36,6 +36,8 @@ The script creates `dist/KR8.AppDir` and `dist/KR8-x86_64.AppImage`. The AppDir
 contains the `kr8` binary, the icon, a desktop file, and the license/notice
 files under `usr/share/doc/kr8/`.
 
+![AppImage running in Ubuntu 22.04](screenshots/ui-appimage-jammy.png)
+
 ## Verification
 
 ```text
