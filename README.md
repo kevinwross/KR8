@@ -16,10 +16,13 @@ The design is frozen in [kr8-plan.md](kr8-plan.md); the task-level checklist is
 - **M3** — portable debug session: done
 - **M4** — Win32 debugger UI: done
 - **M5** — SDL3/Linux UI: done
-- **M6** — docs, packaging, release checks: in progress
+- **M6** — docs, packaging, release checks: done
+- **Post-v1** — built-in source editor in explicit Edit mode: implemented
 
 The target machine has no C/C++ compiler and no linker. `kr8 as` produces one
-self-contained image; the host tools and UI are C++20.
+self-contained image; the host tools and UI are C++20. The debugger includes a
+multiline source editor with syntax highlighting, selection, undo/redo, Ctrl+S,
+dirty prompts, and F8 assemble/reload.
 
 ## Build
 

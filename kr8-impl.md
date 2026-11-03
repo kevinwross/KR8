@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **Complete — v0.1.0**  
-Current task: **none**
+Current milestone: **Post-v1 — built-in source editor**
+Current task: **post-v1 editor complete**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -103,7 +103,7 @@ Last updated: **2026-11-03T12:15:21-08:00** (America/Los_Angeles)
 **Tasks:** 44 total, 44 done, 0 in progress, 0 blocked.  
 **Code:** full CLI toolchain, portable debug session, Win32 and SDL3 debuggers,
 and the Linux Xvfb smoke test.  
-**Current focus:** v0.1.0 complete.
+**Current focus:** post-v1 editor complete.
 
 ### Critical path
 
@@ -1311,7 +1311,7 @@ These are not separate milestones; they are habits applied throughout.
 | Performance | Run in slices; no unbounded loops in the UI; step budget in the session. |
 | Compatibility | No OS headers outside `src/platform`; no Windows-only code in `src/ui`. |
 | Dependencies | No new third-party dependency without a licence entry and a plan note. |
-| Versioning | Tool `0.1.0`; image format `1.0`; bump deliberately. |
+| Versioning | Tool `0.2.0`; image format `1.0`; bump deliberately. |
 
 ---
 
@@ -1388,6 +1388,14 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T15:45:50-08:00** — Post-v1 built-in source editor implemented in
+  explicit Edit mode: multiline editing, selection, clipboard, undo/redo,
+  syntax highlighting, auto-indent, Ctrl+S/dirty prompts, stale-pane dimming,
+  F8 assemble/reload, and line-breakpoint revalidation. Added `SourceEditor`
+  tests; 144 C++ tests pass, Windows CTest 6/6, Linux UI CTest 8/8, sanitizer
+  7/7. Docs and screenshots updated. Tool version bumped to `0.2.0`; tag `v0.2.0`.
+  Artifacts: Windows exe 704,512 bytes, zip about 1.5 MiB; Ubuntu 22.04
+  AppImage 2.2 MiB with a maximum of `GLIBC_2.34`.
 - **2026-11-03T15:08:29-08:00** — Fixed the call-stack pane overlap: frames now
   use a two-line row (function/index, then source line plus `ret`/`pc`) and the
   heading is clipped to the pane. Added a nested three-frame regression test;
@@ -1567,3 +1575,26 @@ Use this at each gate; copy the relevant block into the work log.
 - [x] Linux AppImage on clean VM.
 - [x] CI matrix and release workflow defined; local equivalent green.
 - [x] Definition of Done complete.
+
+---
+
+## 15. Post-v1 extension — built-in source editor
+
+**Status:** `Done` (2026-11-03)
+
+**Scope**
+
+- [x] Explicit Edit mode for `.asm`/`.s`; `.k8`/`.bin` remain read-only.
+- [x] Multiline `SourceEditor`: caret, selection, clipboard, undo/redo,
+      Home/End, Ctrl+arrows, PageUp/PageDown, auto-indent, tab insertion.
+- [x] Syntax highlighting for comments, labels, instructions, directives,
+      registers, numbers, and strings.
+- [x] Ctrl+S save and dirty prompts on Load/close.
+- [x] F8 assembles the buffer, writes `.k8`, resets PC to entry, and returns
+      to Debug mode.
+- [x] Line breakpoints revalidated/snapped after assemble; address breakpoints
+      cleared.
+- [x] Disassembly and Symbols marked stale and dimmed during editing.
+- [x] Regression tests for editing and the nested call stack.
+- [x] Docs and screenshots updated.
+- [x] Version bumped to `0.2.0`; Windows and Ubuntu 22.04 artifacts refreshed.

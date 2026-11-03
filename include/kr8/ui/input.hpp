@@ -40,8 +40,11 @@ enum class Key {
     C,
     O,
     R,
+    S,
     V,
     X,
+    Y,
+    Z,
 };
 
 struct MouseMove {
@@ -51,6 +54,8 @@ struct MouseMove {
 struct MouseDown {
     Point position;
     MouseButton button = MouseButton::None;
+    bool shift = false;
+    bool ctrl = false;
 };
 
 struct MouseUp {
@@ -90,8 +95,10 @@ struct Focus {
 
 struct Timer {};
 
+struct CloseRequest {};
+
 using Event = std::variant<MouseMove, MouseDown, MouseUp, MouseWheel,
                            MouseLeave, KeyDown, KeyUp, TextInput, Resize,
-                           Focus, Timer>;
+                           Focus, Timer, CloseRequest>;
 
 }  // namespace kr8::ui

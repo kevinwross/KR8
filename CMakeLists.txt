@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(kr8 VERSION 0.1.0 LANGUAGES CXX)
+project(kr8 VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,6 +40,7 @@ add_library(kr8_core STATIC
   src/vm/machine.cpp
   src/vm/runner.cpp
   src/platform/console.cpp
+  src/ui/source_editor.cpp
 )
 
 target_include_directories(kr8_core PUBLIC
@@ -59,6 +60,7 @@ if(KR8_BUILD_UI)
     src/ui/app.cpp
     src/ui/help.cpp
     src/ui/text_field.cpp
+    src/ui/syntax.cpp
     src/resources/embedded_fonts.cpp
   )
   if(WIN32)

@@ -35,6 +35,11 @@ std::vector<std::string> help_lines() {
     lines.emplace_back("F5 run    F6 break    F7 restart    F8 assemble");
     lines.emplace_back("F10 step line    F11 step instruction    F1 help");
     lines.emplace_back("Ctrl+O load    Ctrl+R assemble    Esc close");
+    lines.emplace_back("");
+    lines.emplace_back("Editing (Source Edit button)");
+    lines.emplace_back("Ctrl+S save    Ctrl+Z undo    Ctrl+Y redo");
+    lines.emplace_back("Ctrl+A select all    Ctrl+C/X/V clipboard");
+    lines.emplace_back("F8 assemble and reload    Esc leave edit mode");
     return lines;
 }
 

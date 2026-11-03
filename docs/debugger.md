@@ -31,9 +31,10 @@ console. On Linux it runs the SDL3 window in-process.
 
 - **Top bar** — Load, Assemble, Run, Break, Restart, Reset stats, Settings;
   INS/CYC/TIME/IPS counters on the right.
-- **Source** (top left) — assembly source with line numbers, current-line
-  highlight, breakpoint gutter, and Over/In/Out line-step buttons.
-  Non-executable lines are dimmed.
+- **Source** (top left) — assembly source with line numbers, syntax colouring,
+  current-line highlight, breakpoint gutter, and Over/In/Out line-step buttons.
+  The **Edit** button opens the built-in multiline editor. Non-executable lines
+  are dimmed in Debug mode.
 - **Disassembly** (top right) — every decoded instruction with address, bytes,
   and symbol-aware text. The PC row is highlighted; address breakpoints live in
   the left gutter.
@@ -83,7 +84,38 @@ Breakpoints survive Restart and a successful reassembly. Continuing from a
 breakpoint executes the instruction at the current PC once before the
 breakpoint is checked again.
 
-## 5. Registers, flags, and memory
+## 5. Editing source
+
+![Source Edit mode](screenshots/ui-edit.png)
+
+The **Edit** button enters an explicit Edit mode for `.asm`/`.s` files. `.k8` and
+`.bin` images remain read-only.
+
+In Edit mode:
+
+- Type, select with Shift+arrows or the mouse, drag-select, and double-click a
+  word. The editor supports Ctrl+A/C/X/V, undo/redo, Home/End, Ctrl+arrows, and
+  PageUp/PageDown.
+- Enter copies the current indentation; a label line such as `loop:` adds one
+  level. Tab inserts four spaces.
+- `Ctrl+S` saves the `.asm` file. Unsaved changes prompt before Load or close.
+- Syntax colouring distinguishes comments, labels, instructions, directives,
+  registers, numbers, and strings.
+- Run, Break, Restart, and all step controls are disabled. Press **F8** or
+  **Assemble** to build the buffer.
+- On success, KR8 writes the adjacent `.k8`, reloads it, resets PC to entry, and
+  returns to Debug mode. Line breakpoints are kept by line number and snapped
+  forward to the nearest executable line; address breakpoints are cleared.
+- On failure, Edit mode stays open and the diagnostics overlay appears.
+- While editing, Disassembly and Symbols are marked `(stale)` and dimmed; the
+  last image remains visible as context.
+
+`Esc` leaves Edit mode; if there are unsaved changes, KR8 asks before discarding
+them.
+
+![Drag selection in the editor](screenshots/ui-edit-selection.png)
+
+## 6. Registers, flags, and memory
 
 ![Memory editing](screenshots/ui-memory-edit.png)
 
@@ -96,7 +128,7 @@ breakpoint is checked again.
 - Hover a memory byte for its address, hex value, decimal value, and symbol.
 - The memory map is always complete; there is nothing to scroll.
 
-## 6. Symbols, call stack, and console
+## 7. Symbols, call stack, and console
 
 - Click a code symbol to set PC to its address. Click a data symbol to select
   it in the memory map. Right-click a symbol to toggle an address breakpoint.
@@ -109,7 +141,7 @@ breakpoint is checked again.
 - Click the console input, type, and press Enter. The text plus a newline is
   queued for `IN`. `Esc` leaves the input field.
 
-## 7. Help and tooltips
+## 8. Help and tooltips
 
 - `F1` opens a two-column quick reference covering registers, flags, memory,
   all 63 instructions, directives, and keys.
@@ -117,7 +149,7 @@ breakpoint is checked again.
 - Hover a memory byte for address/value/symbol details.
 - Hover the top-bar buttons for hit feedback and the hand cursor.
 
-## 8. Settings
+## 9. Settings
 
 ![Settings](screenshots/ui-settings.png)
 
@@ -133,7 +165,7 @@ Settings are stored in `%APPDATA%\KR8\settings.ini` on Windows, or
 `$XDG_CONFIG_HOME/kr8/settings.ini` / `~/.config/kr8/settings.ini` on Linux.
 They survive an application restart.
 
-## 9. Errors
+## 10. Errors
 
 ![Assembly errors](screenshots/ui-errors.png)
 
@@ -142,7 +174,7 @@ Clicking a row jumps the source pane to that line; Esc closes the overlay. The
 previous image remains loaded and step-able, so a bad edit does not destroy the
 debug session.
 
-## 10. Keyboard reference
+## 11. Keyboard reference
 
 | Key | Action |
 |---|---|
@@ -155,12 +187,16 @@ debug session.
 | `F11` | Step instruction |
 | `Ctrl+O` | Load file |
 | `Ctrl+R` | Assemble/reload |
+| `Ctrl+S` | Save source (Edit mode) |
+| `Ctrl+Z` / `Ctrl+Y` | Undo / redo (Edit mode) |
+| `Ctrl+A` / `Ctrl+C` / `Ctrl+X` / `Ctrl+V` | Select all / copy / cut / paste |
+| `Enter` | Newline with auto-indent (Edit mode) |
+| `Tab` | Insert four spaces (Edit mode) |
 | `Esc` | Close help/settings/errors, cancel edit, leave console input |
 
-## 11. Known limits
+## 12. Known limits
 
-- There is no built-in source editor in v1; edit externally, then press
-  Assemble.
+- The editor has no find/replace, code folding, or multi-file support yet.
 - The call stack is a shadow stack, not a frame-pointer walk. It is best effort
   for code that breaks the `CALL`/`RET` structure.
 - Conditional breakpoints, watch expressions, and reverse execution are not

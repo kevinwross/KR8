@@ -3,11 +3,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "kr8/session.hpp"
 #include "kr8/ui/canvas.hpp"
 #include "kr8/ui/input.hpp"
+#include "kr8/ui/source_editor.hpp"
 #include "kr8/ui/window.hpp"
 #include "text_field.hpp"
 
@@ -33,6 +35,7 @@ private:
         Restart,
         ResetStats,
         Settings,
+        EditSource,
         CStepOver,
         CStepIn,
         CStepOut,
@@ -67,6 +70,13 @@ private:
         int index = 0;
     };
 
+    enum class ConfirmKind {
+        None,
+        DiscardForLoad,
+        DiscardForExit,
+        DiscardForClose,
+    };
+
     void layout();
     void update_buttons();
     void draw_top(Canvas& canvas, const Snapshot& snapshot);
@@ -82,13 +92,30 @@ private:
     void draw_tooltip(Canvas& canvas, const Snapshot& snapshot);
     void draw_errors(Canvas& canvas);
     void draw_settings(Canvas& canvas);
+    void draw_confirm(Canvas& canvas);
     void draw_pane_header(Canvas& canvas, const Rect& pane,
                           std::string_view title, int group);
     void draw_button(Canvas& canvas, const Button& button);
 
     void activate(Action action);
+    void request_open_file();
+    void request_quit();
     void open_file_dialog();
     void open_settings();
+    void toggle_edit();
+    void enter_edit();
+    void leave_edit();
+    void discard_edit();
+    void save_source();
+    void after_edit();
+    void ensure_caret_visible();
+    bool source_dirty() const;
+    bool source_stale() const;
+    std::string joined_source() const;
+    void update_title();
+    void show_confirm(ConfirmKind kind);
+    void perform_confirm();
+    void revalidate_line_breakpoints(const std::set<int>& lines);
     void assemble_current();
     void start_run();
     void stop_run(std::string reason);
@@ -102,6 +129,7 @@ private:
     void save_settings();
 
     void handle_mouse_down(const MouseDown& down);
+    void handle_mouse_up(const MouseUp& up);
     void handle_mouse_move(const MouseMove& move);
     void handle_wheel(const MouseWheel& wheel);
     void handle_key(const KeyDown& key);
@@ -115,12 +143,14 @@ private:
     bool in_source_gutter(Point point) const;
     bool in_asm_gutter(Point point) const;
     int source_line_at(int y) const;
+    std::pair<int, int> source_position_at(Point point) const;
     int asm_row_at(int y) const;
     int memory_cell_at(Point point) const;
     int symbol_row_at(Point point) const;
     int stack_row_at(Point point) const;
     int error_row_at(Point point) const;
     int settings_row_at(Point point) const;
+    int confirm_button_at(Point point) const;
     std::string status_text(const Snapshot& snapshot) const;
 
     Window& window_;
@@ -167,12 +197,28 @@ private:
     bool help_open_ = false;
     bool errors_open_ = false;
     bool settings_open_ = false;
+    ConfirmKind confirm_ = ConfirmKind::None;
     bool follow_ = true;
     bool show_changes_ = true;
     int hover_asm_ = -1;
     int hover_memory_ = -1;
 
+    SourceEditor editor_;
+    std::string source_baseline_;
+    std::string source_saved_;
+    bool source_editing_ = false;
+    bool source_focus_ = false;
+    bool source_dragging_ = false;
+    bool source_file_dirty_ = false;
+    bool caret_visible_ = true;
+    std::uint64_t last_source_click_ms_ = 0;
+    Point last_source_click_{};
+    Rect confirm_discard_{};
+    Rect confirm_cancel_{};
+    int source_char_width_ = 8;
+
     int source_scroll_ = 0;
+    int source_hscroll_ = 0;
     int asm_scroll_ = 0;
     int symbols_scroll_ = 0;
     int stack_scroll_ = 0;

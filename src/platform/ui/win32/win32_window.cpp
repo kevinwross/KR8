@@ -76,8 +76,11 @@ Key map_key(WPARAM key) {
         case 'C': return Key::C;
         case 'O': return Key::O;
         case 'R': return Key::R;
+        case 'S': return Key::S;
         case 'V': return Key::V;
         case 'X': return Key::X;
+        case 'Y': return Key::Y;
+        case 'Z': return Key::Z;
         default: return Key::Unknown;
     }
 }
@@ -246,7 +249,7 @@ void Win32Window::set_cursor(CursorKind cursor) {
 
 void Win32Window::request_close() {
     if (hwnd_ != nullptr) {
-        PostMessageW(hwnd_, WM_CLOSE, 0, 0);
+        DestroyWindow(hwnd_);
     }
 }
 
@@ -328,7 +331,9 @@ LRESULT Win32Window::handle_message(UINT message, WPARAM wparam,
         case WM_RBUTTONDOWN:
             dispatch_mouse(MouseDown{
                 Point{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)},
-                map_button(message)});
+                map_button(message),
+                (GetKeyState(VK_SHIFT) & 0x8000) != 0,
+                (GetKeyState(VK_CONTROL) & 0x8000) != 0});
             return 0;
         case WM_LBUTTONUP:
         case WM_MBUTTONUP:
@@ -365,7 +370,11 @@ LRESULT Win32Window::handle_message(UINT message, WPARAM wparam,
             update_cursor();
             return TRUE;
         case WM_CLOSE:
-            DestroyWindow(hwnd_);
+            if (application_ != nullptr) {
+                application_->event(Event{CloseRequest{}});
+            } else {
+                DestroyWindow(hwnd_);
+            }
             return 0;
         case WM_DESTROY:
             KillTimer(hwnd_, kTimerId);

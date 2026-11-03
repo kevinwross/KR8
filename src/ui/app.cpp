@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <iterator>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -20,6 +22,7 @@
 #include "kr8/image.hpp"
 #include "kr8/isa.hpp"
 #include "kr8/ui/input.hpp"
+#include "kr8/ui/syntax.hpp"
 #include "theme.hpp"
 
 namespace kr8::ui {
@@ -105,6 +108,59 @@ bool read_file_bytes(const std::filesystem::path& path,
     bytes.assign(std::istreambuf_iterator<char>(input),
                  std::istreambuf_iterator<char>());
     return true;
+}
+
+bool read_text_file(const std::filesystem::path& path, std::string& text,
+                    std::string& error) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        error = "cannot open " + path.string();
+        return false;
+    }
+    text.assign(std::istreambuf_iterator<char>(input),
+                std::istreambuf_iterator<char>());
+    return true;
+}
+
+bool write_text_file(const std::filesystem::path& path,
+                     std::string_view text, std::string& error) {
+    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    if (!output) {
+        error = "cannot write " + path.string();
+        return false;
+    }
+    output.write(text.data(), static_cast<std::streamsize>(text.size()));
+    if (!output) {
+        error = "cannot write " + path.string();
+        return false;
+    }
+    return true;
+}
+
+int mono_char_width(Canvas& canvas) {
+    return std::max(1, canvas.measure("M", FontRole::MonoSmall).width);
+}
+
+int display_column(std::string_view line, int byte_column) {
+    const int limit =
+        std::clamp(byte_column, 0, static_cast<int>(line.size()));
+    int column = 0;
+    for (int i = 0; i < limit; ++i) {
+        column += line[static_cast<std::size_t>(i)] == '\t' ? 4 : 1;
+    }
+    return column;
+}
+
+int byte_column_at_display(std::string_view line, int display) {
+    int column = 0;
+    for (std::size_t i = 0; i < line.size(); ++i) {
+        const int width = line[i] == '\t' ? 4 : 1;
+        if (column + width > display) {
+            return static_cast<int>(i);
+        }
+        column += width;
+    }
+    return static_cast<int>(line.size());
 }
 
 std::vector<std::string> console_lines(std::string_view text) {
@@ -280,21 +336,26 @@ void App::layout() {
     add_top("Settings", 70, Action::Settings, false);
 
     auto add_group = [&](const Rect& pane, int group, bool source_group) {
-        const int button_width = 44;
+        const int count = source_group ? 4 : 3;
+        const int button_width = source_group ? 48 : 44;
         const int gap = 4;
-        const int start_x = pane.right - 6 - (3 * button_width + 2 * gap);
+        const int start_x =
+            pane.right - 6 - (count * button_width + (count - 1) * gap);
         const int y = pane.top + 4;
-        const Action actions[3] = {
-            source_group ? Action::CStepOver : Action::AStepOver,
-            source_group ? Action::CStepIn : Action::AStepIn,
-            source_group ? Action::CStepOut : Action::AStepOut,
-        };
-        const char* labels[3] = {"Over", "In", "Out"};
-        for (int i = 0; i < 3; ++i) {
+        const Action source_actions[4] = {
+            Action::EditSource, Action::CStepOver, Action::CStepIn,
+            Action::CStepOut};
+        const Action asm_actions[3] = {Action::AStepOver, Action::AStepIn,
+                                       Action::AStepOut};
+        const char* source_labels[4] = {"Edit", "Over", "In", "Out"};
+        const char* asm_labels[3] = {"Over", "In", "Out"};
+        for (int i = 0; i < count; ++i) {
             const int left = start_x + i * (button_width + gap);
             buttons_.push_back(Button{
-                Rect{left, y, left + button_width, y + 22}, labels[i],
-                actions[i], true, false, group});
+                Rect{left, y, left + button_width, y + 22},
+                source_group ? source_labels[i] : asm_labels[i],
+                source_group ? source_actions[i] : asm_actions[i], true,
+                false, group});
         }
     };
     add_group(source_pane_, 1, true);
@@ -314,13 +375,19 @@ void App::update_buttons() {
             case Action::Assemble:
                 button.enabled = source;
                 break;
+            case Action::EditSource:
+                button.enabled = loaded && source && !running;
+                button.label = source_editing_ ? "Editing" : "Edit";
+                break;
             case Action::Run:
-                button.enabled = loaded && !running;
+                button.enabled = loaded && !running && !source_editing_;
                 break;
             case Action::Break:
                 button.enabled = running;
                 break;
             case Action::Restart:
+                button.enabled = loaded && !running && !source_editing_;
+                break;
             case Action::ResetStats:
                 button.enabled = loaded;
                 break;
@@ -333,7 +400,7 @@ void App::update_buttons() {
             case Action::AStepOver:
             case Action::AStepIn:
             case Action::AStepOut:
-                button.enabled = loaded && !running;
+                button.enabled = loaded && !running && !source_editing_;
                 break;
             default:
                 break;
@@ -360,6 +427,9 @@ void App::paint(Canvas& canvas) {
         draw_settings(canvas);
     } else if (errors_open_) {
         draw_errors(canvas);
+    }
+    if (confirm_ != ConfirmKind::None) {
+        draw_confirm(canvas);
     }
 }
 
@@ -429,25 +499,56 @@ int App::source_line_at(int y) const {
     }
     const int row = (y - source_text_.top) / kRowHeight;
     const int index = source_scroll_ + row;
-    if (index < 0 ||
-        index >= static_cast<int>(session_.source_lines().size())) {
+    const int count = source_editing_
+                          ? editor_.line_count()
+                          : static_cast<int>(session_.source_lines().size());
+    if (index < 0 || index >= count) {
         return 0;
     }
     return index + 1;
 }
 
+std::pair<int, int> App::source_position_at(Point point) const {
+    const int count = source_editing_
+                          ? editor_.line_count()
+                          : static_cast<int>(session_.source_lines().size());
+    if (!source_text_.contains(point) || count <= 0) {
+        return {-1, -1};
+    }
+    const int row = (point.y - source_text_.top) / kRowHeight;
+    const int line = source_scroll_ + row;
+    if (line < 0 || line >= count) {
+        return {-1, -1};
+    }
+    const int text_x = source_text_.left + kSourceGutter + 6 -
+                       source_hscroll_;
+    const int display = std::max(0, (point.x - text_x) /
+                                       std::max(1, source_char_width_));
+    const std::string& content =
+        source_editing_
+            ? editor_.lines()[static_cast<std::size_t>(line)]
+            : session_.source_lines()[static_cast<std::size_t>(line)];
+    return {line, byte_column_at_display(content, display)};
+}
+
 void App::draw_source(Canvas& canvas, const Snapshot& snapshot) {
     canvas.fill_rect(source_pane_, kPanel);
     canvas.frame_rect(source_pane_, kBorder);
-    draw_pane_header(canvas, source_pane_, "Source  (line steps)", 1);
+    std::string title =
+        source_editing_ ? "Source  (editing)" : "Source  (line steps)";
+    if (source_file_dirty_) {
+        title += " *";
+    }
+    draw_pane_header(canvas, source_pane_, title, 1);
 
-    if (!session_.loaded()) {
+    if (!session_.loaded() && !source_editing_) {
         canvas.text(source_text_.left + 12, source_text_.top + 12,
                     "Load a .asm or .k8 file (Ctrl+O).", kTextDim,
                     FontRole::MonoSmall);
         return;
     }
-    const auto& lines = session_.source_lines();
+    const auto& lines =
+        source_editing_ ? editor_.lines() : session_.source_lines();
     if (lines.empty()) {
         canvas.text(source_text_.left + 12, source_text_.top + 12,
                     "No source attached; use the disassembly.", kTextDim,
@@ -455,8 +556,15 @@ void App::draw_source(Canvas& canvas, const Snapshot& snapshot) {
         return;
     }
 
+    source_char_width_ = mono_char_width(canvas);
     const int visible = std::max(1, source_text_.height() / kRowHeight);
-    if (follow_ && snapshot.line > 0) {
+    if (source_editing_) {
+        if (editor_.cursor_line() < source_scroll_) {
+            source_scroll_ = std::max(0, editor_.cursor_line() - 2);
+        } else if (editor_.cursor_line() >= source_scroll_ + visible) {
+            source_scroll_ = editor_.cursor_line() - visible + 3;
+        }
+    } else if (follow_ && snapshot.line > 0) {
         const int row = snapshot.line - 1;
         if (row < source_scroll_) {
             source_scroll_ = std::max(0, row - 2);
@@ -468,21 +576,62 @@ void App::draw_source(Canvas& canvas, const Snapshot& snapshot) {
         std::clamp(source_scroll_, 0,
                    std::max(0, static_cast<int>(lines.size()) - visible));
 
+    const int text_x = source_text_.left + kSourceGutter + 6;
+    const int text_width = source_text_.width() - kSourceGutter - 12;
+    if (source_editing_) {
+        const std::string& caret_line = lines[static_cast<std::size_t>(
+            editor_.cursor_line())];
+        const int caret_x =
+            display_column(caret_line, editor_.cursor_column()) *
+            source_char_width_;
+        if (caret_x < source_hscroll_) {
+            source_hscroll_ = std::max(0, caret_x - source_char_width_);
+        } else if (caret_x >= source_hscroll_ + text_width) {
+            source_hscroll_ =
+                caret_x - text_width + source_char_width_ * 2;
+        }
+    }
+    source_hscroll_ = std::max(0, source_hscroll_);
+
     const Rect gutter{source_text_.left, source_text_.top,
                       source_text_.left + kSourceGutter, source_text_.bottom};
     canvas.fill_rect(gutter, kPanelAlt);
     canvas.fill_rect(Rect{gutter.right - 1, gutter.top, gutter.right,
                           gutter.bottom},
                      kBorder);
+
+    const bool selection = source_editing_ && editor_.has_selection();
+    int selection_start_line = 0;
+    int selection_start_column = 0;
+    int selection_end_line = 0;
+    int selection_end_column = 0;
+    if (selection) {
+        selection_start_line = editor_.anchor_line();
+        selection_start_column = editor_.anchor_column();
+        selection_end_line = editor_.cursor_line();
+        selection_end_column = editor_.cursor_column();
+        if (selection_end_line < selection_start_line ||
+            (selection_end_line == selection_start_line &&
+             selection_end_column < selection_start_column)) {
+            std::swap(selection_start_line, selection_end_line);
+            std::swap(selection_start_column, selection_end_column);
+        }
+    }
+
+    const Rect text_area{source_text_.left + kSourceGutter,
+                         source_text_.top, source_text_.right,
+                         source_text_.bottom};
     canvas.push_clip(source_text_);
     for (int row = 0; row < visible; ++row) {
         const int index = source_scroll_ + row;
         if (index >= static_cast<int>(lines.size())) {
             break;
         }
+        const std::string& line = lines[static_cast<std::size_t>(index)];
         const int line_number = index + 1;
         const int y = source_text_.top + row * kRowHeight;
-        const bool current = line_number == snapshot.line;
+        const bool current = !source_editing_ && !source_stale() &&
+                             line_number == snapshot.line;
         if (current) {
             canvas.fill_rect(
                 Rect{source_text_.left, y, source_text_.right,
@@ -493,19 +642,76 @@ void App::draw_source(Canvas& canvas, const Snapshot& snapshot) {
                      y + kRowHeight},
                 kAccent);
         }
+        canvas.push_clip(text_area);
+        if (selection && index >= selection_start_line &&
+            index <= selection_end_line) {
+            const int start =
+                index == selection_start_line ? selection_start_column : 0;
+            const int end =
+                index == selection_end_line
+                    ? selection_end_column
+                    : static_cast<int>(line.size());
+            if (end > start) {
+                const int x1 = text_x -
+                               source_hscroll_ +
+                               display_column(line, start) *
+                                   source_char_width_;
+                const int x2 = text_x -
+                               source_hscroll_ +
+                               display_column(line, end) *
+                                   source_char_width_;
+                canvas.fill_rect(Rect{x1, y, x2, y + kRowHeight},
+                                 kSelection);
+            }
+        }
+
+        const bool executable =
+            !source_editing_ &&
+            session_.executable_lines().count(line_number) != 0;
+        const auto spans = highlight_source_line(line);
+        for (const auto& span : spans) {
+            const int x = text_x - source_hscroll_ +
+                          display_column(line, span.start) *
+                              source_char_width_;
+            const int width = display_column(
+                                  line, span.start + span.length) *
+                              source_char_width_ -
+                              display_column(line, span.start) *
+                                  source_char_width_;
+            if (x + width < source_text_.left ||
+                x > source_text_.right) {
+                continue;
+            }
+            Color color = span.color;
+            if (!source_editing_ && !executable) {
+                color = kTextDim;
+            }
+            canvas.text(x, y + 1,
+                        std::string_view(line).substr(
+                            static_cast<std::size_t>(span.start),
+                            static_cast<std::size_t>(span.length)),
+                        color, FontRole::MonoSmall);
+        }
+
+        if (source_editing_ && source_focus_ && caret_visible_ &&
+            index == editor_.cursor_line()) {
+            const int caret_x = text_x - source_hscroll_ +
+                                display_column(line, editor_.cursor_column()) *
+                                    source_char_width_;
+            canvas.fill_rect(Rect{caret_x, y + 2, caret_x + 1,
+                                  y + kRowHeight - 2},
+                             kText);
+        }
+        canvas.pop_clip();
+
         text_right(canvas, gutter.right - 6, y + 2,
                    std::to_string(line_number),
                    current ? kAccent : kTextDim, FontRole::MonoSmall);
         if (session_.has_line_breakpoint(line_number)) {
             canvas.fill_rect(
                 Rect{gutter.left + 5, y + 7, gutter.left + 11, y + 13},
-                kRed);
+                source_editing_ ? kTextDim : kRed);
         }
-        const bool executable =
-            session_.executable_lines().count(line_number) != 0;
-        canvas.text(source_text_.left + kSourceGutter + 6, y + 1,
-                    lines[static_cast<std::size_t>(index)],
-                    executable ? kText : kTextDim, FontRole::MonoSmall);
     }
     canvas.pop_clip();
 }
@@ -526,8 +732,10 @@ int App::asm_row_at(int y) const {
 void App::draw_disassembly(Canvas& canvas, const Snapshot& snapshot) {
     canvas.fill_rect(disasm_pane_, kPanel);
     canvas.frame_rect(disasm_pane_, kBorder);
-    draw_pane_header(canvas, disasm_pane_, "Disassembly  (instruction steps)",
-                     2);
+    const std::string title =
+        source_editing_ ? "Disassembly  (stale)"
+                        : "Disassembly  (instruction steps)";
+    draw_pane_header(canvas, disasm_pane_, title, 2);
 
     const auto& instructions = session_.disassembly();
     if (!session_.loaded() || instructions.empty()) {
@@ -550,7 +758,7 @@ void App::draw_disassembly(Canvas& canvas, const Snapshot& snapshot) {
                 }
             }
         }
-        if (follow_ && current_index >= 0) {
+        if (follow_ && !source_editing_ && current_index >= 0) {
             if (current_index < asm_scroll_) {
                 asm_scroll_ = std::max(0, current_index - 2);
             } else if (current_index >= asm_scroll_ + visible) {
@@ -582,7 +790,8 @@ void App::draw_disassembly(Canvas& canvas, const Snapshot& snapshot) {
             hit.gutter = gutter;
             asm_rows_.push_back(hit);
 
-            const bool current = index == current_index;
+            const bool current =
+                !source_editing_ && index == current_index;
             if (current) {
                 canvas.fill_rect(row_rect, kHighlight);
                 canvas.fill_rect(
@@ -594,11 +803,14 @@ void App::draw_disassembly(Canvas& canvas, const Snapshot& snapshot) {
                     instruction.address) != 0) {
                 canvas.fill_rect(
                     Rect{gutter.left + 3, y + 7, gutter.left + 9, y + 13},
-                    kRed);
+                    source_editing_ ? kTextDim : kRed);
             }
             canvas.text(disasm_text_.left + 22, y + 1,
                         hex2(instruction.address),
-                        current ? kText : kTextDim, FontRole::MonoSmall);
+                        source_editing_
+                            ? kTextDim
+                            : (current ? kText : kTextDim),
+                        FontRole::MonoSmall);
             std::string bytes;
             for (int byte = 0; byte < instruction.size; ++byte) {
                 if (!bytes.empty()) {
@@ -608,9 +820,13 @@ void App::draw_disassembly(Canvas& canvas, const Snapshot& snapshot) {
                     byte)]);
             }
             canvas.text(disasm_text_.left + 54, y + 1, bytes,
-                        current ? kText : kTextDim, FontRole::MonoSmall);
+                        source_editing_
+                            ? kTextDim
+                            : (current ? kText : kTextDim),
+                        FontRole::MonoSmall);
             canvas.text(disasm_text_.left + 108, y + 1, instruction.text,
-                        current ? kText : kText, FontRole::MonoSmall);
+                        source_editing_ ? kTextDim : kText,
+                        FontRole::MonoSmall);
         }
         canvas.pop_clip();
     }
@@ -768,7 +984,8 @@ int App::symbol_row_at(Point point) const {
 void App::draw_symbols(Canvas& canvas, const Snapshot& snapshot) {
     canvas.fill_rect(symbols_pane_, kPanel);
     canvas.frame_rect(symbols_pane_, kBorder);
-    draw_pane_header(canvas, symbols_pane_, "Symbols", 0);
+    draw_pane_header(canvas, symbols_pane_,
+                     source_editing_ ? "Symbols  (stale)" : "Symbols", 0);
 
     const auto& symbols = session_.symbols();
     if (symbols.empty()) {
@@ -793,7 +1010,7 @@ void App::draw_symbols(Canvas& canvas, const Snapshot& snapshot) {
         const Rect rect{symbols_text_.left, y, symbols_text_.right,
                         y + row_height};
         symbol_rows_.push_back(HitRow{rect, index});
-        if (symbol.kind == SymbolKind::Code &&
+        if (!source_editing_ && symbol.kind == SymbolKind::Code &&
             symbol.value == static_cast<std::int32_t>(snapshot.pc)) {
             canvas.fill_rect(rect, kHighlight);
         }
@@ -803,10 +1020,11 @@ void App::draw_symbols(Canvas& canvas, const Snapshot& snapshot) {
                 static_cast<std::uint8_t>(symbol.value)) != 0) {
             canvas.fill_rect(Rect{rect.left + 3, y + 7, rect.left + 8,
                                   y + 12},
-                             kRed);
+                             source_editing_ ? kTextDim : kRed);
         }
         canvas.text(symbols_text_.left + 12, y + 1, symbol.name,
-                    kind_color(symbol.kind), FontRole::MonoSmall);
+                    source_editing_ ? kTextDim : kind_color(symbol.kind),
+                    FontRole::MonoSmall);
         text_right(canvas, symbols_text_.right - 6, y + 1,
                    hex2(static_cast<std::uint8_t>(symbol.value & 0xFF)),
                    kTextDim, FontRole::MonoSmall);
@@ -914,6 +1132,16 @@ void App::draw_console(Canvas& canvas, const Snapshot& snapshot) {
 }
 
 std::string App::status_text(const Snapshot& snapshot) const {
+    if (source_editing_) {
+        std::ostringstream out;
+        out << "edit " << (editor_.cursor_line() + 1) << ':'
+            << (editor_.cursor_column() + 1);
+        if (source_file_dirty_) {
+            out << "  *";
+        }
+        out << "  [editing]";
+        return out.str();
+    }
     std::ostringstream out;
     out << "pc=0x" << hex2(snapshot.pc) << "  line " << snapshot.line
         << "  instr " << snapshot.instructions << "  cycles "
@@ -934,16 +1162,20 @@ void App::draw_status(Canvas& canvas, const Snapshot& snapshot) {
         canvas.push_clip(Rect{status_.left + 370, status_.top,
                               status_.right - 330, status_.bottom});
         canvas.text(status_.left + 380, status_.top + 4, "   " + message,
-                    message.find("error") != std::string::npos ||
-                            message.find("fault") != std::string::npos
-                        ? kRed
-                        : kTextDim,
+                    source_editing_
+                        ? kAmber
+                        : (message.find("error") != std::string::npos ||
+                                   message.find("fault") != std::string::npos
+                               ? kRed
+                               : kTextDim),
                     FontRole::MonoSmall);
         canvas.pop_clip();
     }
     text_right(canvas, status_.right - 8, status_.top + 4,
-               "F5 run  F6 break  F10 line  F11 step  F1 help", kTextDim,
-               FontRole::MonoSmall);
+               source_editing_
+                   ? "Ctrl+S save  F8 assemble  Ctrl+Z undo  F1 help"
+                   : "F5 run  F6 break  F10 line  F11 step  F1 help",
+               kTextDim, FontRole::MonoSmall);
 }
 
 void App::draw_help(Canvas& canvas) {
@@ -983,7 +1215,8 @@ int App::hit_button(Point point) const {
 }
 
 void App::draw_tooltip(Canvas& canvas, const Snapshot& snapshot) {
-    if (help_open_ || settings_open_ || errors_open_) {
+    if (help_open_ || settings_open_ || errors_open_ ||
+        confirm_ != ConfirmKind::None) {
         return;
     }
     std::vector<std::string> lines;
@@ -1140,6 +1373,57 @@ void App::draw_settings(Canvas& canvas) {
     }
 }
 
+void App::draw_confirm(Canvas& canvas) {
+    const int width = 470;
+    const int height = 190;
+    const int left = (size_.width - width) / 2;
+    const int top = (size_.height - height) / 2;
+    const Rect overlay{left, top, left + width, top + height};
+    canvas.fill_rect(overlay, kPanel);
+    canvas.frame_rect(overlay, kAmber, 2);
+    canvas.text(overlay.left + 16, overlay.top + 12, "Unsaved source",
+                kAmber, FontRole::UiBold);
+
+    std::string text;
+    switch (confirm_) {
+        case ConfirmKind::DiscardForLoad:
+            text = "Discard unsaved edits and open another file?";
+            break;
+        case ConfirmKind::DiscardForExit:
+            text = "Discard unsaved edits and return to debugging?";
+            break;
+        case ConfirmKind::DiscardForClose:
+            text = "Discard unsaved edits and close KR8?";
+            break;
+        case ConfirmKind::None:
+            return;
+    }
+    canvas.text(overlay.left + 16, overlay.top + 48, text, kText,
+                FontRole::MonoSmall);
+
+    confirm_discard_ = Rect{overlay.right - 250, overlay.bottom - 54,
+                            overlay.right - 140, overlay.bottom - 20};
+    confirm_cancel_ = Rect{overlay.right - 128, overlay.bottom - 54,
+                           overlay.right - 16, overlay.bottom - 20};
+    canvas.fill_rect(confirm_discard_, kRed);
+    canvas.frame_rect(confirm_discard_, kBorder);
+    text_center(canvas, confirm_discard_, "Discard", kBg, FontRole::Ui);
+    canvas.fill_rect(confirm_cancel_, kButton);
+    canvas.frame_rect(confirm_cancel_, kBorder);
+    text_center(canvas, confirm_cancel_, "Keep editing", kText,
+                FontRole::Ui);
+}
+
+int App::confirm_button_at(Point point) const {
+    if (confirm_discard_.contains(point)) {
+        return 0;
+    }
+    if (confirm_cancel_.contains(point)) {
+        return 1;
+    }
+    return -1;
+}
+
 bool App::in_source_gutter(Point point) const {
     return source_text_.contains(point) &&
            point.x < source_text_.left + kSourceGutter;
@@ -1153,18 +1437,29 @@ bool App::in_asm_gutter(Point point) const {
 void App::activate(Action action) {
     switch (action) {
         case Action::Load:
-            open_file_dialog();
+            request_open_file();
             break;
         case Action::Assemble:
             assemble_current();
             break;
+        case Action::EditSource:
+            toggle_edit();
+            break;
         case Action::Run:
+            if (source_editing_) {
+                message_ = "assemble the source before running";
+                break;
+            }
             start_run();
             break;
         case Action::Break:
             stop_run("paused");
             break;
         case Action::Restart: {
+            if (source_editing_) {
+                message_ = "assemble the source before restarting";
+                break;
+            }
             std::string error;
             if (session_.loaded() && session_.restart(error)) {
                 message_ = "restarted";
@@ -1186,21 +1481,45 @@ void App::activate(Action action) {
             open_settings();
             break;
         case Action::CStepOver:
+            if (source_editing_) {
+                message_ = "assemble the source before stepping";
+                break;
+            }
             step_line(StepMode::LineOver);
             break;
         case Action::CStepIn:
+            if (source_editing_) {
+                message_ = "assemble the source before stepping";
+                break;
+            }
             step_line(StepMode::LineIn);
             break;
         case Action::CStepOut:
+            if (source_editing_) {
+                message_ = "assemble the source before stepping";
+                break;
+            }
             step_line(StepMode::LineOut);
             break;
         case Action::AStepOver:
+            if (source_editing_) {
+                message_ = "assemble the source before stepping";
+                break;
+            }
             step_instruction(0);
             break;
         case Action::AStepIn:
+            if (source_editing_) {
+                message_ = "assemble the source before stepping";
+                break;
+            }
             step_instruction(1);
             break;
         case Action::AStepOut:
+            if (source_editing_) {
+                message_ = "assemble the source before stepping";
+                break;
+            }
             step_instruction(2);
             break;
         default:
@@ -1224,6 +1543,234 @@ void App::open_settings() {
     help_open_ = false;
     errors_open_ = false;
     window_.invalidate();
+}
+
+bool App::source_dirty() const {
+    return source_file_dirty_;
+}
+
+bool App::source_stale() const {
+    return source_editing_ && editor_.text() != source_baseline_;
+}
+
+std::string App::joined_source() const {
+    std::string result;
+    const auto& lines = session_.source_lines();
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        if (i != 0) {
+            result.push_back('\n');
+        }
+        result += lines[i];
+    }
+    return result;
+}
+
+void App::update_title() {
+    std::string title = "KR8";
+    if (!current_path_.empty()) {
+        title += " — " + current_path_.filename().string();
+    }
+    if (source_dirty()) {
+        title += " *";
+    }
+    window_.set_title(title);
+}
+
+void App::enter_edit() {
+    if (!session_.loaded() || !is_source_extension(current_path_)) {
+        message_ = "edit is available for .asm files only";
+        window_.invalidate();
+        return;
+    }
+    if (session_.running()) {
+        message_ = "stop the program before editing";
+        window_.invalidate();
+        return;
+    }
+    std::string source;
+    std::string error;
+    if (source_file_dirty_) {
+        source = editor_.text();
+    } else {
+        if (!read_text_file(current_path_, source, error)) {
+            source = joined_source();
+        }
+        source_saved_ = source;
+    }
+    source_baseline_ = joined_source();
+    editor_.set_text(source);
+    if (!source_file_dirty_) {
+        source_saved_ = editor_.text();
+    }
+    source_editing_ = true;
+    source_focus_ = true;
+    source_dragging_ = false;
+    console_focus_ = false;
+    console_field_.focused = false;
+    caret_visible_ = true;
+    source_scroll_ = 0;
+    source_hscroll_ = 0;
+    errors_open_ = false;
+    confirm_ = ConfirmKind::None;
+    window_.set_timer(500, true);
+    message_ = "editing — F8 assemble, Ctrl+S save";
+    update_title();
+    window_.invalidate();
+}
+
+void App::leave_edit() {
+    source_editing_ = false;
+    source_focus_ = false;
+    source_dragging_ = false;
+    source_hscroll_ = 0;
+    window_.set_timer(8, false);
+    message_ = source_saved_ != source_baseline_
+                   ? "source file differs from the loaded image; assemble to update"
+                   : "editing closed";
+    update_title();
+    window_.invalidate();
+}
+
+void App::discard_edit() {
+    editor_.set_text(source_baseline_);
+    source_editing_ = false;
+    source_focus_ = false;
+    source_dragging_ = false;
+    source_file_dirty_ = false;
+    source_hscroll_ = 0;
+    caret_visible_ = true;
+    window_.set_timer(8, false);
+    message_ = "unsaved edits discarded";
+    update_title();
+    window_.invalidate();
+}
+
+void App::toggle_edit() {
+    if (!source_editing_) {
+        enter_edit();
+        return;
+    }
+    if (source_dirty()) {
+        show_confirm(ConfirmKind::DiscardForExit);
+        return;
+    }
+    leave_edit();
+}
+
+void App::save_source() {
+    if (!source_editing_) {
+        return;
+    }
+    if (!is_source_extension(current_path_)) {
+        message_ = "save is available for .asm files only";
+        window_.invalidate();
+        return;
+    }
+    std::string error;
+    if (!write_text_file(current_path_, editor_.text(), error)) {
+        message_ = error;
+        window_.invalidate();
+        return;
+    }
+    source_saved_ = editor_.text();
+    source_file_dirty_ = false;
+    message_ = "saved " + current_path_.filename().string();
+    update_title();
+    window_.invalidate();
+}
+
+void App::ensure_caret_visible() {
+    if (!source_editing_) {
+        return;
+    }
+    const std::string& line = editor_.lines()[static_cast<std::size_t>(
+        editor_.cursor_line())];
+    const int caret_x =
+        display_column(line, editor_.cursor_column()) * source_char_width_;
+    const int width = source_text_.width() - kSourceGutter - 12;
+    if (caret_x < source_hscroll_) {
+        source_hscroll_ = std::max(0, caret_x - source_char_width_);
+    } else if (caret_x >= source_hscroll_ + width) {
+        source_hscroll_ =
+            std::max(0, caret_x - width + source_char_width_ * 2);
+    }
+}
+
+void App::after_edit() {
+    source_focus_ = true;
+    caret_visible_ = true;
+    window_.set_timer(500, true);
+    ensure_caret_visible();
+    source_file_dirty_ = editor_.text() != source_saved_;
+    update_title();
+    message_ = source_file_dirty_
+                   ? "modified — F8 assemble, Ctrl+S save"
+                   : "source saved; F8 assemble to debug";
+    window_.invalidate();
+}
+
+void App::show_confirm(ConfirmKind kind) {
+    confirm_ = kind;
+    help_open_ = false;
+    settings_open_ = false;
+    errors_open_ = false;
+    source_focus_ = false;
+    window_.invalidate();
+}
+
+void App::perform_confirm() {
+    const ConfirmKind kind = confirm_;
+    confirm_ = ConfirmKind::None;
+    switch (kind) {
+        case ConfirmKind::DiscardForLoad:
+            discard_edit();
+            open_file_dialog();
+            break;
+        case ConfirmKind::DiscardForExit:
+            discard_edit();
+            break;
+        case ConfirmKind::DiscardForClose:
+            discard_edit();
+            window_.request_close();
+            break;
+        case ConfirmKind::None:
+            break;
+    }
+    window_.invalidate();
+}
+
+void App::request_open_file() {
+    if (source_dirty()) {
+        show_confirm(ConfirmKind::DiscardForLoad);
+        return;
+    }
+    open_file_dialog();
+}
+
+void App::request_quit() {
+    if (source_dirty()) {
+        show_confirm(ConfirmKind::DiscardForClose);
+        return;
+    }
+    window_.request_close();
+}
+
+void App::revalidate_line_breakpoints(const std::set<int>& lines) {
+    int restored = 0;
+    for (const int line : lines) {
+        if (line <= 0) {
+            continue;
+        }
+        const std::size_t before = session_.line_breakpoints().size();
+        session_.toggle_line_breakpoint(line);
+        if (session_.line_breakpoints().size() > before) {
+            ++restored;
+        }
+    }
+    if (restored > 0) {
+        message_ += " (" + std::to_string(restored) + " breakpoint" +
+                    (restored == 1 ? "" : "s") + " restored)";
+    }
 }
 
 void App::load_settings() {
@@ -1265,6 +1812,12 @@ void App::update_snapshot_history() {
 }
 
 void App::open(const std::filesystem::path& path) {
+    source_editing_ = false;
+    source_focus_ = false;
+    source_dragging_ = false;
+    source_file_dirty_ = false;
+    source_hscroll_ = 0;
+    window_.set_timer(8, false);
     std::string error;
     const std::string extension = extension_of(path);
     bool ok = false;
@@ -1292,7 +1845,6 @@ void App::open(const std::filesystem::path& path) {
         error = "unsupported file type";
     }
 
-    window_.set_timer(8, false);
     diagnostics_ = std::move(diagnostics);
     errors_open_ = !ok && !diagnostics_.empty();
     if (!ok) {
@@ -1301,8 +1853,9 @@ void App::open(const std::filesystem::path& path) {
         return;
     }
     current_path_ = path;
+    source_baseline_ = joined_source();
+    source_saved_.clear();
     message_ = "loaded " + path.filename().string();
-    window_.set_title("KR8 — " + path.filename().string());
     source_scroll_ = 0;
     asm_scroll_ = 0;
     symbols_scroll_ = 0;
@@ -1312,6 +1865,7 @@ void App::open(const std::filesystem::path& path) {
     console_field_.focused = false;
     follow_ = true;
     update_snapshot_history();
+    update_title();
     layout();
     window_.invalidate();
 }
@@ -1322,24 +1876,72 @@ void App::assemble_current() {
         window_.invalidate();
         return;
     }
+
+    const std::set<int> old_breakpoints = session_.line_breakpoints();
     std::string error;
     window_.set_timer(8, false);
-    if (session_.assemble(current_path_, error)) {
-        message_ = "assembled " + current_path_.filename().string();
-        diagnostics_.clear();
-        errors_open_ = false;
-        follow_ = true;
-        update_snapshot_history();
+    bool ok = false;
+    const bool was_editing = source_editing_;
+    if (was_editing) {
+        ok = session_.assemble_source(editor_.text(),
+                                      current_path_.string(), error);
     } else {
-        message_ = error;
-        diagnostics_ = session_.diagnostics();
-        errors_open_ = !diagnostics_.empty();
+        ok = session_.assemble(current_path_, error);
     }
+    diagnostics_ = session_.diagnostics();
+    if (!ok) {
+        message_ = error;
+        errors_open_ = !diagnostics_.empty();
+        if (was_editing) {
+            window_.set_timer(500, true);
+        }
+        update_title();
+        layout();
+        window_.invalidate();
+        return;
+    }
+
+    if (was_editing) {
+        std::filesystem::path output = current_path_;
+        output.replace_extension(".k8");
+        std::string save_error;
+        message_ = "assembled " + current_path_.filename().string();
+        if (!save_image_file(output, session_.image(), save_error)) {
+            message_ = save_error;
+        }
+        source_baseline_ = joined_source();
+        source_editing_ = false;
+        source_focus_ = false;
+        source_dragging_ = false;
+        source_hscroll_ = 0;
+        source_file_dirty_ = editor_.text() != source_saved_;
+        window_.set_timer(8, false);
+        revalidate_line_breakpoints(old_breakpoints);
+        if (editor_.text() != source_saved_) {
+            message_ += " (source file unsaved)";
+        }
+    } else {
+        message_ = "assembled " + current_path_.filename().string();
+        source_baseline_ = joined_source();
+        source_saved_.clear();
+        source_file_dirty_ = false;
+        revalidate_line_breakpoints(old_breakpoints);
+    }
+    diagnostics_.clear();
+    errors_open_ = false;
+    follow_ = true;
+    update_snapshot_history();
+    update_title();
     layout();
     window_.invalidate();
 }
 
 void App::start_run() {
+    if (source_editing_) {
+        message_ = "assemble the source before running";
+        window_.invalidate();
+        return;
+    }
     if (!session_.loaded()) {
         message_ = "load a program first";
         window_.invalidate();
@@ -1360,6 +1962,12 @@ void App::stop_run(std::string reason) {
 }
 
 void App::on_timer() {
+    if (source_editing_) {
+        caret_visible_ = !caret_visible_;
+        window_.set_timer(500, true);
+        window_.invalidate();
+        return;
+    }
     if (!session_.loaded()) {
         window_.set_timer(8, false);
         return;
@@ -1375,6 +1983,11 @@ void App::on_timer() {
 }
 
 void App::step_line(StepMode mode) {
+    if (source_editing_) {
+        message_ = "assemble the source before stepping";
+        window_.invalidate();
+        return;
+    }
     if (session_.running()) {
         session_.stop_run("paused");
     }
@@ -1388,6 +2001,11 @@ void App::step_line(StepMode mode) {
 }
 
 void App::step_instruction(int mode) {
+    if (source_editing_) {
+        message_ = "assemble the source before stepping";
+        window_.invalidate();
+        return;
+    }
     if (session_.running()) {
         session_.stop_run("paused");
     }
@@ -1407,7 +2025,7 @@ void App::step_instruction(int mode) {
 }
 
 void App::toggle_source_breakpoint(int line) {
-    if (line <= 0) {
+    if (line <= 0 || source_editing_) {
         return;
     }
     session_.toggle_line_breakpoint(line);
@@ -1423,6 +2041,16 @@ void App::toggle_asm_breakpoint(std::uint8_t address) {
 
 void App::handle_mouse_down(const MouseDown& down) {
     const Point point = down.position;
+    if (confirm_ != ConfirmKind::None) {
+        if (confirm_button_at(point) == 0) {
+            perform_confirm();
+        } else {
+            confirm_ = ConfirmKind::None;
+            source_focus_ = source_editing_;
+            window_.invalidate();
+        }
+        return;
+    }
     if (help_open_) {
         help_open_ = false;
         window_.invalidate();
@@ -1460,7 +2088,7 @@ void App::handle_mouse_down(const MouseDown& down) {
         cancel_edit();
     }
 
-    if (down.button == MouseButton::Right) {
+    if (down.button == MouseButton::Right && !source_editing_) {
         const int symbol = symbol_row_at(point);
         if (symbol >= 0) {
             const auto& symbols = session_.symbols();
@@ -1481,6 +2109,62 @@ void App::handle_mouse_down(const MouseDown& down) {
     const int button = hit_button(point);
     if (button >= 0) {
         activate(buttons_[static_cast<std::size_t>(button)].action);
+        return;
+    }
+    if (source_editing_) {
+        if (in_source_gutter(point)) {
+            message_ = "assemble the source to change breakpoints";
+            window_.invalidate();
+            return;
+        }
+        if (source_text_.contains(point)) {
+            const auto position = source_position_at(point);
+            if (position.first < 0) {
+                return;
+            }
+            const auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::steady_clock::now()
+                                     .time_since_epoch())
+                                 .count();
+            const bool double_click =
+                now - static_cast<std::int64_t>(last_source_click_ms_) < 400 &&
+                std::abs(point.x - last_source_click_.x) < 5 &&
+                std::abs(point.y - last_source_click_.y) < 5;
+            last_source_click_ms_ = static_cast<std::uint64_t>(now);
+            last_source_click_ = point;
+            console_focus_ = false;
+            console_field_.focused = false;
+            source_focus_ = true;
+            source_dragging_ = true;
+            caret_visible_ = true;
+            window_.set_timer(500, true);
+            if (double_click) {
+                const std::string& line =
+                    editor_.lines()[static_cast<std::size_t>(position.first)];
+                int start = position.second;
+                int end = position.second;
+                while (start > 0 &&
+                       (std::isalnum(static_cast<unsigned char>(
+                            line[static_cast<std::size_t>(start - 1)])) != 0 ||
+                        line[static_cast<std::size_t>(start - 1)] == '_')) {
+                    --start;
+                }
+                while (end < static_cast<int>(line.size()) &&
+                       (std::isalnum(static_cast<unsigned char>(
+                            line[static_cast<std::size_t>(end)])) != 0 ||
+                        line[static_cast<std::size_t>(end)] == '_')) {
+                    ++end;
+                }
+                editor_.set_cursor(position.first, start, false);
+                editor_.set_cursor(position.first, end, true);
+            } else {
+                editor_.set_cursor(position.first, position.second,
+                                   down.shift);
+            }
+            window_.invalidate();
+            return;
+        }
+        source_focus_ = false;
         return;
     }
     if (in_source_gutter(point)) {
@@ -1569,8 +2253,28 @@ void App::handle_mouse_down(const MouseDown& down) {
     window_.invalidate();
 }
 
+void App::handle_mouse_up(const MouseUp& up) {
+    (void)up;
+    source_dragging_ = false;
+}
+
 void App::handle_mouse_move(const MouseMove& move) {
     mouse_ = move.position;
+    if (source_editing_ && source_dragging_) {
+        Point point = mouse_;
+        point.x = std::clamp(point.x, source_text_.left,
+                             source_text_.right - 1);
+        point.y = std::clamp(point.y, source_text_.top,
+                             source_text_.bottom - 1);
+        const auto position = source_position_at(point);
+        if (position.first >= 0) {
+            editor_.set_cursor(position.first, position.second, true);
+            source_focus_ = true;
+            caret_visible_ = true;
+            window_.invalidate();
+        }
+        return;
+    }
     const int hover = hit_button(mouse_);
     const int asm_hover =
         disasm_text_.contains(mouse_) ? asm_row_at(mouse_.y) : -1;
@@ -1583,8 +2287,11 @@ void App::handle_mouse_move(const MouseMove& move) {
     hover_asm_ = asm_hover;
     hover_memory_ = memory_hover;
     if (changed) {
-        window_.set_cursor(hover >= 0 ? CursorKind::Hand
-                                      : CursorKind::Arrow);
+        CursorKind cursor = hover >= 0 ? CursorKind::Hand : CursorKind::Arrow;
+        if (source_editing_ && source_text_.contains(mouse_)) {
+            cursor = CursorKind::Text;
+        }
+        window_.set_cursor(cursor);
         window_.invalidate();
     }
 }
@@ -1608,6 +2315,14 @@ void App::handle_wheel(const MouseWheel& wheel) {
 }
 
 void App::handle_key(const KeyDown& key) {
+    if (confirm_ != ConfirmKind::None) {
+        if (key.key == Key::Escape) {
+            confirm_ = ConfirmKind::None;
+            source_focus_ = source_editing_;
+            window_.invalidate();
+        }
+        return;
+    }
     if (key.key == Key::F1) {
         help_open_ = !help_open_;
         window_.invalidate();
@@ -1645,6 +2360,175 @@ void App::handle_key(const KeyDown& key) {
         }
         return;
     }
+    if (source_editing_) {
+        const int page = std::max(1, source_text_.height() / kRowHeight);
+        if (key.ctrl && key.key == Key::S) {
+            save_source();
+            return;
+        }
+        if (key.ctrl && key.key == Key::O) {
+            request_open_file();
+            return;
+        }
+        if (key.ctrl && key.key == Key::R) {
+            assemble_current();
+            return;
+        }
+        if (key.key == Key::F8) {
+            assemble_current();
+            return;
+        }
+        if (key.key == Key::Escape) {
+            toggle_edit();
+            return;
+        }
+        if (key.ctrl && (key.key == Key::Z || key.key == Key::Y)) {
+            const bool redo = key.key == Key::Y || key.shift;
+            const bool changed = redo ? editor_.redo() : editor_.undo();
+            if (changed) {
+                after_edit();
+            } else {
+                message_ = redo ? "nothing to redo" : "nothing to undo";
+                window_.invalidate();
+            }
+            return;
+        }
+        if (key.ctrl && key.key == Key::A) {
+            editor_.select_all();
+            source_focus_ = true;
+            window_.invalidate();
+            return;
+        }
+        if (key.ctrl && key.key == Key::C) {
+            const std::string selected = editor_.selected_text();
+            if (!selected.empty()) {
+                window_.set_clipboard_text(selected);
+                message_ = "copied";
+                window_.invalidate();
+            }
+            return;
+        }
+        if (key.ctrl && key.key == Key::X) {
+            const std::string selected = editor_.selected_text();
+            if (!selected.empty()) {
+                window_.set_clipboard_text(selected);
+                editor_.erase_selection();
+                after_edit();
+            }
+            return;
+        }
+        if (key.ctrl && key.key == Key::V) {
+            const std::string clip = window_.clipboard_text();
+            if (!clip.empty()) {
+                editor_.insert_text(clip);
+                after_edit();
+            }
+            return;
+        }
+        if (key.ctrl && key.key == Key::Home) {
+            editor_.move_document_start(key.shift);
+            ensure_caret_visible();
+            window_.invalidate();
+            return;
+        }
+        if (key.ctrl && key.key == Key::End) {
+            editor_.move_document_end(key.shift);
+            ensure_caret_visible();
+            window_.invalidate();
+            return;
+        }
+        if (key.ctrl && key.key == Key::Left) {
+            editor_.move_word_left(key.shift);
+            ensure_caret_visible();
+            window_.invalidate();
+            return;
+        }
+        if (key.ctrl && key.key == Key::Right) {
+            editor_.move_word_right(key.shift);
+            ensure_caret_visible();
+            window_.invalidate();
+            return;
+        }
+        if (key.ctrl && key.key == Key::Backspace) {
+            editor_.erase_word_backward();
+            after_edit();
+            return;
+        }
+        if (key.ctrl && key.key == Key::Delete) {
+            editor_.erase_word_forward();
+            after_edit();
+            return;
+        }
+        switch (key.key) {
+            case Key::Left:
+                editor_.move_left(key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::Right:
+                editor_.move_right(key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::Up:
+                editor_.move_up(key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::Down:
+                editor_.move_down(key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::Home:
+                editor_.move_home(key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::End:
+                editor_.move_end(key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::PageUp:
+                editor_.move_page(-page, key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::PageDown:
+                editor_.move_page(page, key.shift);
+                ensure_caret_visible();
+                window_.invalidate();
+                return;
+            case Key::Backspace:
+                editor_.backspace();
+                after_edit();
+                return;
+            case Key::Delete:
+                editor_.delete_forward();
+                after_edit();
+                return;
+            case Key::Enter:
+                editor_.enter();
+                after_edit();
+                return;
+            case Key::Tab:
+                editor_.insert_text("    ");
+                after_edit();
+                return;
+            case Key::F5:
+            case Key::F6:
+            case Key::F7:
+            case Key::F10:
+            case Key::F11:
+                message_ = "assemble the source before running or stepping";
+                window_.invalidate();
+                return;
+            default:
+                break;
+        }
+        return;
+    }
     if (console_focus_) {
         if (key.key == Key::Escape) {
             console_focus_ = false;
@@ -1671,7 +2555,7 @@ void App::handle_key(const KeyDown& key) {
         return;
     }
     if (key.ctrl && key.key == Key::O) {
-        open_file_dialog();
+        request_open_file();
         return;
     }
     if (key.ctrl && key.key == Key::R) {
@@ -1694,7 +2578,22 @@ void App::handle_key(const KeyDown& key) {
 }
 
 void App::handle_text_input(std::string_view text) {
-    if (help_open_ || settings_open_ || errors_open_) {
+    if (help_open_ || settings_open_ || errors_open_ ||
+        confirm_ != ConfirmKind::None) {
+        return;
+    }
+    if (source_editing_) {
+        std::string filtered;
+        for (const char value : text) {
+            const auto byte = static_cast<unsigned char>(value);
+            if (byte >= 0x20 && byte != 0x7F) {
+                filtered.push_back(value);
+            }
+        }
+        if (!filtered.empty()) {
+            editor_.insert_text(filtered);
+            after_edit();
+        }
         return;
     }
     if (editing_register_ >= 0 || editing_memory_ >= 0) {
@@ -1788,6 +2687,8 @@ void App::event(const Event& event) {
                 handle_mouse_down(value);
             } else if constexpr (std::is_same_v<T, MouseMove>) {
                 handle_mouse_move(value);
+            } else if constexpr (std::is_same_v<T, MouseUp>) {
+                handle_mouse_up(value);
             } else if constexpr (std::is_same_v<T, MouseWheel>) {
                 handle_wheel(value);
             } else if constexpr (std::is_same_v<T, KeyDown>) {
@@ -1799,6 +2700,18 @@ void App::event(const Event& event) {
                 window_.invalidate();
             } else if constexpr (std::is_same_v<T, Timer>) {
                 on_timer();
+            } else if constexpr (std::is_same_v<T, CloseRequest>) {
+                request_quit();
+            } else if constexpr (std::is_same_v<T, Focus>) {
+                if (value.focused) {
+                    if (source_editing_) {
+                        caret_visible_ = true;
+                        window_.set_timer(500, true);
+                    }
+                } else {
+                    caret_visible_ = false;
+                }
+                window_.invalidate();
             } else if constexpr (std::is_same_v<T, MouseLeave>) {
                 hover_button_ = -1;
                 window_.invalidate();

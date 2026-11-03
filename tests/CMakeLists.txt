@@ -16,6 +16,7 @@ add_executable(kr8_tests
   test_cpu_control.cpp
   test_cpu_io.cpp
   test_machine.cpp
+  test_source_editor.cpp
 )
 
 target_include_directories(kr8_tests PRIVATE
@@ -30,7 +31,7 @@ add_test(NAME kr8.tests COMMAND kr8_tests)
 
 add_test(NAME kr8.cli.version COMMAND kr8 --version)
 set_tests_properties(kr8.cli.version PROPERTIES
-  PASS_REGULAR_EXPRESSION "KR8 0.1.0"
+  PASS_REGULAR_EXPRESSION "KR8 0.2.0"
 )
 
 add_test(NAME kr8.cli.as

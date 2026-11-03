@@ -1,6 +1,7 @@
 # KR8 — Design and Implementation Plan
 
-Status: accepted for implementation (decisions frozen 2026-11-03)  
+Status: accepted for implementation (decisions frozen 2026-11-03);
+post-v1 built-in editor extension added 2026-11-03
 Implementation checklist: [kr8-impl.md](kr8-impl.md)  
 Project: KR8, an 8-bit teaching computer  
 Companion project: KR16 (`..\kr16`)  
@@ -30,7 +31,7 @@ was written; the second group was confirmed in the 2026-11-03 review.
 | Syntax | KR16-like and orthogonal: `MOV A, #5`, `LD A, [msg]`, `ST [buf], A`, `ADD A, B`, `JZ loop` |
 | Image | Self-contained `.k8`: 256-byte RAM, symbols, line table, embedded source, code bitmap, CRC32 |
 | Debugger platforms | Windows (Win32 GDI) and Linux (SDL3) together |
-| Source editing | External editor in v1; built-in editor is a later phase |
+| Source editing | Built-in editor in explicit Edit mode (post-v1 extension, 2026-11-03) |
 | UI baseline | Port KR16's proven UI skeleton and visual language; replace the C panes with assembly/source panes |
 | Host stack | C++20 + CMake; KR16 Win32 GDI and SDL3 backends; static SDL3 on Linux, `/MT` on Windows |
 | ISA scope | All 63 instructions, including `TST`, `ADC`/`SBC`, `JV`/`JNV`, and the signed compare helpers |
@@ -110,8 +111,8 @@ The toolchain has four pieces:
 - Interrupts, timers, vectors, privilege modes, or memory-mapped I/O.
 - A filesystem, heap, or system-call ABI. Console I/O is `OUT`/`IN`.
 - DAP, VS Code integration, or a second debugger front end.
-- Source editing inside the debugger (later phase), conditional breakpoints,
-  watch expressions, reverse execution, or multi-threading.
+- Conditional breakpoints, watch expressions, reverse execution, or
+  multi-threading.
 - Multi-file programs, `.include`, and local-label scoping (designed for, but
   deferred).
 - 16-bit arithmetic or floating point.
@@ -1250,18 +1251,29 @@ loads a raw 256-byte image at entry 0.
 
 ### 9.5 Source pane
 
-- Read-only text in v1. Editing happens in the student's editor; `Assemble`
-  re-reads the file.
+- Debug mode is read-only. The **Edit** button enters an explicit Edit mode for
+  `.asm`/`.s` files; `.k8`/`.bin` images stay read-only.
+- In Edit mode the source is a multiline editor: caret, selection, clipboard,
+  undo/redo, Home/End, Ctrl+arrows, PageUp/PageDown, auto-indent, syntax
+  highlighting, and Ctrl+S save. Line numbers and breakpoint dots remain visible,
+  but stepping is disabled until Assemble succeeds.
+- **Assemble** compiles the editor buffer (not the stale file), writes the
+  adjacent `.k8`, resets PC to entry, and returns to Debug mode. Assembly failure
+  keeps Edit mode and shows diagnostics.
+- **Ctrl+S** writes the `.asm`; unsaved changes prompt before Load or close.
+- Line breakpoints are kept by line number and snapped forward to the nearest
+  executable line after a successful assemble; address breakpoints are cleared.
+- While editing, Disassembly and Symbols are marked `(stale)` and dimmed. The
+  last image remains visible as context.
 - Line numbers in a 3-digit gutter (sources are small; 2 digits are enough but 3
   leaves room for growth).
 - Current line: `kHighlight` row with a 3px `kAccent` left bar.
-- Breakpoint: 6x6 red square in the gutter; click toggles.
-- Non-executable lines (comments, labels alone, data directives, blank lines) are
-  dimmed. Clicking a breakpoint on one snaps forward to the next executable line
+- Breakpoint: 6x6 red square in the gutter; click toggles in Debug mode. Clicking
+  a breakpoint on a non-executable line snaps forward to the next executable line
   and reports the move.
 - Auto-scroll to the current line with a "follow" toggle.
 - If the image has no embedded source, show "No source attached; use the
-  disassembly." and disable line breakpoints/line steps.
+  disassembly." and disable line breakpoints/line steps and Edit mode.
 
 ### 9.6 Disassembly pane
 
@@ -1688,7 +1700,6 @@ tests green.
 
 ### Later (not required for v1)
 
-- Built-in source editor with save/dirty state.
 - Local labels, `.include`, macros, multi-file programs.
 - Conditional breakpoints, watch expressions, run-to-cursor.
 - ARM64 Linux/AppImage.
@@ -1714,7 +1725,7 @@ image, and session are comparatively small.
 | Absolute addresses only | No relocation, no position independence | Intentional: no linker and no separate load address; document it as a feature |
 | 8-bit PC wrap | A 2-byte instruction at `0xFF` corrupts fetch | Assembler rejects; CPU faults; tests at the boundary |
 | Embedded source/path issues | Windows paths with `\r`, `\n`, `\t` broke KR16's debugger | Store source as length-delimited UTF-8 in the blob, never escape-process paths; test a `C:\...` path |
-| No editor in v1 | Students need two programs | Clear "edit externally, then Assemble" workflow; built-in editor is the first post-v1 feature |
+| No editor in v1 | Students need two programs | Resolved by the post-v1 explicit Edit mode: edit, Ctrl+S, F8 assemble, then step |
 | Line stepping is less central without C | Source lines mostly equal instructions | Keep line stepping for directives/data/future multi-instruction lines; emphasize instruction stepping |
 | Cycle model is approximate | Students may over-interpret it | Label it as a simple estimate; document the formula; don't use it for correctness |
 
@@ -1734,8 +1745,8 @@ Settled in the 2026-11-03 review:
 
 Deliberately deferred (not v1):
 
-1. **Built-in editor scope** — v2 feature. Needs selection, undo, save, dirty
-   state, and syntax highlighting; not a `TextField`.
+1. **Built-in editor scope** — implemented as the post-v1 Edit mode: selection,
+   undo/redo, save/dirty state, syntax highlighting, and explicit assemble/reload.
 2. **Local labels** — `@loop`/`.loop` scoped to the last global label. Useful,
    but not required for the first examples. The symbol table can add a scope
    field without an image-format break.

@@ -45,8 +45,11 @@ Key map_key(SDL_Keycode key) {
         case SDLK_C: return Key::C;
         case SDLK_O: return Key::O;
         case SDLK_R: return Key::R;
+        case SDLK_S: return Key::S;
         case SDLK_V: return Key::V;
         case SDLK_X: return Key::X;
+        case SDLK_Y: return Key::Y;
+        case SDLK_Z: return Key::Z;
         default: return Key::Unknown;
     }
 }
@@ -240,7 +243,11 @@ void SdlWindow::handle_event(const SDL_Event& event) {
     switch (event.type) {
         case SDL_EVENT_QUIT:
         case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-            running_ = false;
+            if (application_ != nullptr) {
+                application_->event(Event{CloseRequest{}});
+            } else {
+                running_ = false;
+            }
             break;
         case SDL_EVENT_WINDOW_RESIZED:
             if (application_ != nullptr) {
@@ -273,7 +280,11 @@ void SdlWindow::handle_event(const SDL_Event& event) {
                                   static_cast<int>(event.button.y)};
                 const MouseButton button = map_button(event.button.button);
                 if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-                    application_->event(Event{MouseDown{point, button}});
+                    const SDL_Keymod mod = SDL_GetModState();
+                    application_->event(Event{MouseDown{
+                        point, button,
+                        (mod & SDL_KMOD_SHIFT) != 0,
+                        (mod & SDL_KMOD_CTRL) != 0}});
                 } else {
                     application_->event(Event{MouseUp{point, button}});
                 }
