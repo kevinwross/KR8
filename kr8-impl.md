@@ -6,7 +6,7 @@ Implementation started: 2026-11-03
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
 Current milestone: **M0 — Skeleton and machine**  
-Current task: **M0.1 — Repository skeleton and CMake**
+Current task: **M0.2 — Shared ISA table**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -85,11 +85,11 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T11:31:36-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T11:38:23-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
-| M0 — Skeleton and machine | `Not started` | — | — | M0.1 |
+| M0 — Skeleton and machine | `In progress` | 2026-11-03 | — | M0.2 |
 | M1 — Image, assembler, disassembler | `Not started` | — | — | M1.1 |
 | M2 — VM and CLI | `Not started` | — | — | M2.1 |
 | M3 — Debug session | `Not started` | — | — | M3.1 |
@@ -97,9 +97,9 @@ Last updated: **2026-11-03T11:31:36-08:00** (America/Los_Angeles)
 | M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 0 done, 0 in progress, 0 blocked.  
-**Code:** none yet.  
-**Current focus:** M0.1.
+**Tasks:** 44 total, 1 done, 0 in progress, 0 blocked.  
+**Code:** M0.1 skeleton, version, CLI stub, test harness.  
+**Current focus:** M0.2.
 
 ### Critical path
 
@@ -138,7 +138,7 @@ Total: roughly 27–36 developer-days, matching plan §13.
 
 ### M0.1 — Repository skeleton and CMake
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** —
 - **Estimate:** 0.5 day
 - **Files:** `CMakeLists.txt`, `CMakePresets.json`, `.gitignore`, `LICENSE`,
@@ -148,18 +148,18 @@ Total: roughly 27–36 developer-days, matching plan §13.
 
 **Work**
 
-- [ ] Create the directory tree from plan §10.
-- [ ] `CMakeLists.txt`: project `kr8` version `0.1.0`, C++20, no extensions.
-- [ ] Add `kr8_core` static library with `src/core/version.cpp`.
-- [ ] Add `kr8` executable with `version`/`help` stubs.
-- [ ] Add `kr8_tests` executable and a small test harness or vendored doctest.
-- [ ] Warnings: MSVC `/W4 /WX /permissive- /Zc:__cplusplus /Brepro`; GCC/Clang
+- [x] Create the directory tree from plan §10.
+- [x] `CMakeLists.txt`: project `kr8` version `0.1.0`, C++20, no extensions.
+- [x] Add `kr8_core` static library with `src/core/version.cpp`.
+- [x] Add `kr8` executable with `version`/`help` stubs.
+- [x] Add `kr8_tests` executable and a small test harness or vendored doctest.
+- [x] Warnings: MSVC `/W4 /WX /permissive- /Zc:__cplusplus /Brepro`; GCC/Clang
       `-Wall -Wextra -Wpedantic -Werror`.
-- [ ] MSVC static runtime: `MultiThreaded$<$<CONFIG:Debug>:Debug>`.
-- [ ] Presets: `windows-ninja`, `windows-vs2026`, `linux-gcc`, each with debug
+- [x] MSVC static runtime: `MultiThreaded$<$<CONFIG:Debug>:Debug>`.
+- [x] Presets: `windows-ninja`, `windows-vs2026`, `linux-gcc`, each with debug
       and release builds.
-- [ ] Add `.gitignore`, MIT `LICENSE`, and a short `README.md`.
-- [ ] `kr8 --version` prints `KR8 0.1.0`.
+- [x] Add `.gitignore`, MIT `LICENSE`, and a short `README.md`.
+- [x] `kr8 --version` prints `KR8 0.1.0`.
 
 **Acceptance**
 
@@ -167,6 +167,11 @@ Total: roughly 27–36 developer-days, matching plan §13.
 - `kr8 --version` prints the version and exits 0.
 - `ctest` finds and runs the placeholder test.
 - No warnings under the configured flags.
+
+Verified: `windows-vs2026` configure, `windows-vs2026-debug` build, CTest
+`kr8.tests` (3 tests) passed, `kr8 --version` → `KR8 0.1.0`. The `windows-ninja`
+preset is present but needs a Visual Studio developer environment (`vcvars64`);
+the VS generator was used for this checkpoint.
 
 ### M0.2 — Shared ISA table
 
@@ -1325,6 +1330,10 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T11:38:23-08:00** — M0.1 done: created the project skeleton,
+  CMake/Presets, MIT licence, README, version API, CLI `version`/`help` stubs,
+  and the test harness. Built with `windows-vs2026`; CTest `kr8.tests` passed
+  (3 tests); `kr8 --version` → `KR8 0.1.0`. Next: M0.2.
 - **2026-11-03T11:31:36-08:00** — Design freeze accepted in
   [kr8-plan.md](kr8-plan.md): C++20/CMake + KR16 Win32/SDL3 UI stack, all 63
   instructions, non-blocking `IN` with `Z` (no EOF distinction), simple cycle
@@ -1346,7 +1355,7 @@ Timestamps use `local-datetime` and the host time zone
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| M0.1 | Repository skeleton and CMake | — | `Not started` |
+| M0.1 | Repository skeleton and CMake | — | `Done` |
 | M0.2 | Shared ISA table | M0.1 | `Not started` |
 | M0.3 | Memory, registers, fetch/decode | M0.2 | `Not started` |
 | M0.4 | ALU and flags | M0.3 | `Not started` |
