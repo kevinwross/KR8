@@ -7,6 +7,10 @@ add_executable(kr8_tests
   test_disassembler.cpp
   test_examples.cpp
   test_runner.cpp
+  test_session_load.cpp
+  test_session_steps.cpp
+  test_session_breakpoints.cpp
+  test_session_io.cpp
   test_cpu_decode.cpp
   test_cpu_alu.cpp
   test_cpu_control.cpp

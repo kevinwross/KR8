@@ -29,6 +29,7 @@ add_library(kr8_core STATIC
   src/image/image.cpp
   src/asm/assembler.cpp
   src/dis/disassembler.cpp
+  src/debug/session.cpp
   src/vm/cpu.cpp
   src/vm/machine.cpp
   src/vm/runner.cpp

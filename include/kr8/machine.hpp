@@ -60,6 +60,7 @@ public:
         return cpu_.instructions();
     }
     std::uint64_t cycles() const noexcept { return cpu_.cycles(); }
+    void reset_stats() noexcept { cpu_.reset_counters(); }
 
 private:
     Memory memory_;

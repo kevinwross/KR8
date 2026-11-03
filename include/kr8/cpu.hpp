@@ -120,6 +120,10 @@ public:
 
     std::uint64_t instructions() const noexcept { return instructions_; }
     std::uint64_t cycles() const noexcept { return cycles_; }
+    void reset_counters() noexcept {
+        instructions_ = 0;
+        cycles_ = 0;
+    }
     std::uint8_t last_opcode() const noexcept { return last_opcode_; }
     std::uint8_t last_operand() const noexcept { return last_operand_; }
 

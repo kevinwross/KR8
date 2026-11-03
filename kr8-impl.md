@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **M3 — Debug session**  
-Current task: **M3.1 — Session load, restart, snapshot**
+Current milestone: **M4 — UI foundation and Win32**  
+Current task: **M4.1 — Port UI interfaces**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -88,22 +88,22 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T11:57:21-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T12:02:08-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
 | M0 — Skeleton and machine | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M1 — Image, assembler, disassembler | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M2 — VM and CLI | `Done` | 2026-11-03 | 2026-11-03 | — |
-| M3 — Debug session | `In progress` | 2026-11-03 | — | M3.1 |
-| M4 — UI foundation and Win32 | `Not started` | — | — | M4.1 |
+| M3 — Debug session | `Done` | 2026-11-03 | 2026-11-03 | — |
+| M4 — UI foundation and Win32 | `In progress` | 2026-11-03 | — | M4.1 |
 | M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 20 done, 0 in progress, 0 blocked.  
-**Code:** the full command-line toolchain: `as`, `dis`, `sym`, and `run`, with
-trace/stats, console I/O, golden examples, and precise faults.  
-**Current focus:** M3.1.
+**Tasks:** 44 total, 25 done, 0 in progress, 0 blocked.  
+**Code:** full CLI toolchain plus the portable `Session`: snapshots, stepping,
+breakpoints, shadow call stack, input/console, stats, and editing.  
+**Current focus:** M4.1.
 
 ### Critical path
 
@@ -686,7 +686,7 @@ snapshots from this object only.
 
 ### M3.1 — Session load, restart, snapshot
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M2.4
 - **Estimate:** 0.75 day
 - **Files:** `include/kr8/session.hpp`, `src/debug/session.cpp`,
@@ -695,13 +695,13 @@ snapshots from this object only.
 
 **Work**
 
-- [ ] `Session` owns image, CPU, memory, console, input, breakpoints, stats.
-- [ ] `load_image`, `assemble`, `restart`, `unload`.
-- [ ] Snapshot: registers, flags, PC/SP, line, function, console, frames,
+- [x] `Session` owns image, CPU, memory, console, input, breakpoints, stats.
+- [x] `load_image`, `assemble`, `restart`, `unload`.
+- [x] Snapshot: registers, flags, PC/SP, line, function, console, frames,
       stats, message.
-- [ ] Source lines, executable lines, disassembly, symbols, line/symbol lookup.
-- [ ] Reject bad images without destroying the previous session.
-- [ ] Tests: load/restart/unload, snapshot fields, failed load preserves state.
+- [x] Source lines, executable lines, disassembly, symbols, line/symbol lookup.
+- [x] Reject bad images without destroying the previous session.
+- [x] Tests: load/restart/unload, snapshot fields, failed load preserves state.
 
 **Acceptance**
 
@@ -711,7 +711,7 @@ snapshots from this object only.
 
 ### M3.2 — Stepping and shadow call stack
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M3.1
 - **Estimate:** 1 day
 - **Files:** `src/debug/session.cpp`, `tests/test_session_steps.cpp`
@@ -719,12 +719,12 @@ snapshots from this object only.
 
 **Work**
 
-- [ ] `step_instruction`, `step_instruction_over`, `step_instruction_out`.
-- [ ] `step_line(LineIn/LineOver/LineOut)` with depth predicates.
-- [ ] Shadow call stack: `CALL` push, `RET` pop, caller line, current frame.
-- [ ] `RET` without call and return-address mismatch diagnostics.
-- [ ] 1,000,000-instruction step budget.
-- [ ] Transcript tests for straight-line code, loops, calls, recursion.
+- [x] `step_instruction`, `step_instruction_over`, `step_instruction_out`.
+- [x] `step_line(LineIn/LineOver/LineOut)` with depth predicates.
+- [x] Shadow call stack: `CALL` push, `RET` pop, caller line, current frame.
+- [x] `RET` without call and return-address mismatch diagnostics.
+- [x] 1,000,000-instruction step budget.
+- [x] Transcript tests for straight-line code, loops, calls, recursion.
 
 **Acceptance**
 
@@ -735,7 +735,7 @@ snapshots from this object only.
 
 ### M3.3 — Breakpoints
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M3.2
 - **Estimate:** 0.75 day
 - **Files:** `src/debug/session.cpp`, `tests/test_session_breakpoints.cpp`
@@ -743,13 +743,13 @@ snapshots from this object only.
 
 **Work**
 
-- [ ] Address, line, and symbol breakpoints.
-- [ ] Check before executing; skip the check once when continuing.
-- [ ] Line breakpoints hit every address mapped to the line.
-- [ ] Snap a non-executable line forward and report the move.
-- [ ] Preserve breakpoints across restart/reassemble; remap lines.
-- [ ] `run_slice(max)` returns Budget/Breakpoint/Halted/Fault/Break.
-- [ ] Tests: hit, continue past, breakpoint during step, line with multiple
+- [x] Address, line, and symbol breakpoints.
+- [x] Check before executing; skip the check once when continuing.
+- [x] Line breakpoints hit every address mapped to the line.
+- [x] Snap a non-executable line forward and report the move.
+- [x] Preserve breakpoints across restart/reassemble; remap lines.
+- [x] `run_slice(max)` returns Budget/Breakpoint/Halted/Fault/Break.
+- [x] Tests: hit, continue past, breakpoint during step, line with multiple
       rows, restart persistence.
 
 **Acceptance**
@@ -761,7 +761,7 @@ snapshots from this object only.
 
 ### M3.4 — Console, input, stats, and editing
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M3.1
 - **Estimate:** 0.5 day
 - **Files:** `src/debug/session.cpp`, `tests/test_session_io.cpp`
@@ -769,12 +769,12 @@ snapshots from this object only.
 
 **Work**
 
-- [ ] Console output string; input queue; `push_input`/`clear_input`.
-- [ ] `IN` polling through the session.
-- [ ] `instructions_executed`, `cycles`, `run_time_ms`, `reset_stats`.
-- [ ] Register/flag/memory edits; PC edit updates line; SP edit invalidates
+- [x] Console output string; input queue; `push_input`/`clear_input`.
+- [x] `IN` polling through the session.
+- [x] `instructions_executed`, `cycles`, `run_time_ms`, `reset_stats`.
+- [x] Register/flag/memory edits; PC edit updates line; SP edit invalidates
       frames.
-- [ ] Tests: output capture, input queue, stats reset, edit effects.
+- [x] Tests: output capture, input queue, stats reset, edit effects.
 
 **Acceptance**
 
@@ -784,22 +784,27 @@ snapshots from this object only.
 
 ### M3.5 — M3 test gate
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M3.1–M3.4
 - **Estimate:** 0.5 day
 - **Files:** `tests/`, `kr8-impl.md`
 
 **Work**
 
-- [ ] Full session suite on Windows and Linux.
-- [ ] Transcript tests for all step modes.
-- [ ] ASan/UBSan on Linux.
-- [ ] Update dashboard and work log.
+- [x] Full session suite on Windows and Linux.
+- [x] Transcript tests for all step modes.
+- [x] ASan/UBSan on Linux.
+- [x] Update dashboard and work log.
 
 **Acceptance**
 
 - All M3 tests pass; the UI-facing API is stable.
 - No known P0/P1 defect.
+
+Verified: 134 C++ tests and 6 CTest targets pass on Windows MSVC, Linux GCC,
+and Linux ASan/UBSan. Transcripts cover straight-line code, guard loops via the
+budget, nested and recursive calls, and line In/Over/Out. Breakpoints, frames,
+input, stats, editing, return-without-call, and BRK/fault stops are covered.
 
 ---
 
@@ -1357,6 +1362,10 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T12:02:08-08:00** — M3 gate passed: `Session` with snapshots,
+  instruction/line stepping, shadow call stack, address/line/symbol
+  breakpoints, console/input, stats, and editing. 134 C++ tests and 6 CTest
+  targets on Windows, Linux GCC, and Linux ASan/UBSan. M3 complete. Next: M4.1.
 - **2026-11-03T11:57:21-08:00** — M2 gate passed: runner/CLI, trace/stats,
   console I/O, faults, and all seven golden examples. 105 C++ tests and 6 CTest
   targets on Windows, Linux GCC, and Linux ASan/UBSan; CLI exit codes verified
@@ -1425,11 +1434,11 @@ Timestamps use `local-datetime` and the host time zone
 | M2.2 | Fault diagnostics and edge cases | M2.1 | `Done` |
 | M2.3 | Golden examples and CLI tests | M2.2 | `Done` |
 | M2.4 | M2 test gate | M2.1–M2.3 | `Done` |
-| M3.1 | Session load, restart, snapshot | M2.4 | `Not started` |
-| M3.2 | Stepping and shadow call stack | M3.1 | `Not started` |
-| M3.3 | Breakpoints | M3.2 | `Not started` |
-| M3.4 | Console, input, stats, editing | M3.1 | `Not started` |
-| M3.5 | M3 test gate | M3.1–M3.4 | `Not started` |
+| M3.1 | Session load, restart, snapshot | M2.4 | `Done` |
+| M3.2 | Stepping and shadow call stack | M3.1 | `Done` |
+| M3.3 | Breakpoints | M3.2 | `Done` |
+| M3.4 | Console, input, stats, editing | M3.1 | `Done` |
+| M3.5 | M3 test gate | M3.1–M3.4 | `Done` |
 | M4.1 | Port UI interfaces | M3.5 | `Not started` |
 | M4.2 | Win32 backend | M4.1 | `Not started` |
 | M4.3 | Theme, text field, help scaffolding | M4.1 | `Not started` |
@@ -1481,11 +1490,11 @@ Use this at each gate; copy the relevant block into the work log.
 
 ### M3 checkpoint
 
-- [ ] Step transcripts for straight-line, loop, call, recursion.
-- [ ] Step over/out and line In/Over/Out correct.
-- [ ] Breakpoints: address, line, symbol; continue past; restart persistence.
-- [ ] Shadow stack diagnostics.
-- [ ] Input/output/stats/editing tests pass.
+- [x] Step transcripts for straight-line, loop, call, recursion.
+- [x] Step over/out and line In/Over/Out correct.
+- [x] Breakpoints: address, line, symbol; continue past; restart persistence.
+- [x] Shadow stack diagnostics.
+- [x] Input/output/stats/editing tests pass.
 
 ### M4 checkpoint
 
