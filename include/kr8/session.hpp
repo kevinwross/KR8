@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "kr8/assembler.hpp"
 #include "kr8/cpu.hpp"
 #include "kr8/disassembler.hpp"
 #include "kr8/image.hpp"
@@ -125,6 +126,9 @@ public:
     std::size_t input_size() const noexcept;
     const std::string& console() const noexcept;
     const std::string& message() const noexcept { return message_; }
+    const std::vector<AsmDiagnostic>& diagnostics() const noexcept {
+        return diagnostics_;
+    }
 
     std::uint64_t instructions_executed() const noexcept;
     std::uint64_t cycles() const noexcept;
@@ -168,6 +172,7 @@ private:
     bool breakpoint_skip_ = false;
     bool call_stack_valid_ = true;
     std::string message_;
+    std::vector<AsmDiagnostic> diagnostics_;
     std::uint64_t accumulated_run_us_ = 0;
     std::chrono::steady_clock::time_point run_started_{};
 };

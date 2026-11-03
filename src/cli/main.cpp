@@ -16,6 +16,10 @@
 #include "kr8/runner.hpp"
 #include "kr8/version.hpp"
 
+#ifdef KR8_HAS_UI
+#include "ui/run.hpp"
+#endif
+
 namespace {
 
 constexpr std::string_view kUsage =
@@ -28,7 +32,7 @@ constexpr std::string_view kUsage =
     "  dis <image.k8>    disassemble an image\n"
     "  sym <image.k8>    print the symbol table\n"
     "  run <image>       run an image\n"
-    "  ui [file]         open the debugger (M4)\n"
+    "  ui [file]         open the debugger\n"
     "  version           print the version\n"
     "  help              print this help\n"
     "\n"
@@ -453,11 +457,25 @@ int main(int argc, char** argv) {
         if (command == "run") {
             return command_run(arguments);
         }
+#ifdef KR8_HAS_UI
+        if (command == "ui" || command == "--ui") {
+            return kr8::ui::run_ui(argc, argv);
+        }
+#endif
         std::cerr << "kr8: unknown command '" << command << "'\n\n"
                   << kUsage;
         return 2;
     }
 
+#ifdef KR8_HAS_UI
+    {
+        std::string error;
+        if (kr8::ui::launch_ui_child({}, error)) {
+            return 0;
+        }
+        std::cerr << "kr8: " << error << '\n';
+    }
+#endif
     std::cout << kUsage;
     return 0;
 }

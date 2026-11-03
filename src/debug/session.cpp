@@ -78,6 +78,7 @@ bool Session::load_internal(const Image& image,
                             const std::filesystem::path& path) {
     image_ = image;
     image_path_ = path;
+    diagnostics_.clear();
     decoded_ = decode_image(image_);
     source_lines_.clear();
     if (!image_.sources.empty()) {
@@ -103,6 +104,7 @@ bool Session::assemble(const std::filesystem::path& path, std::string& error) {
     options.include_source = true;
     const AsmResult result = assemble_file(path, options);
     if (!result.ok) {
+        diagnostics_ = result.diagnostics;
         error = diagnostic_text(result);
         return false;
     }
@@ -113,7 +115,9 @@ bool Session::assemble(const std::filesystem::path& path, std::string& error) {
         error = save_error;
         return false;
     }
-    return load_internal(result.image, path);
+    const bool loaded = load_internal(result.image, path);
+    diagnostics_ = result.diagnostics;
+    return loaded;
 }
 
 bool Session::assemble_source(std::string_view source, const std::string& name,
@@ -123,10 +127,13 @@ bool Session::assemble_source(std::string_view source, const std::string& name,
     options.include_source = true;
     const AsmResult result = kr8::assemble(source, options);
     if (!result.ok) {
+        diagnostics_ = result.diagnostics;
         error = diagnostic_text(result);
         return false;
     }
-    return load_internal(result.image, name);
+    const bool loaded = load_internal(result.image, name);
+    diagnostics_ = result.diagnostics;
+    return loaded;
 }
 
 bool Session::restart(std::string& error) {

@@ -5,8 +5,8 @@ Design contract: [kr8-plan.md](kr8-plan.md) — frozen 2026-11-03
 Implementation started: 2026-11-03  
 Owner: Kevin Ross  
 Working directory: `C:\Users\kevin\source\repos\KR8`  
-Current milestone: **M4 — UI foundation and Win32**  
-Current task: **M4.1 — Port UI interfaces**
+Current milestone: **M5 — SDL3/Linux**  
+Current task: **M5.1 — SDL3 canvas and window**
 
 This document is the working checklist. `kr8-plan.md` is the design contract.
 If implementation forces a design change, update `kr8-plan.md` first (or in the
@@ -88,7 +88,7 @@ UI smoke tests are added in M4/M5; their exact commands are recorded there.
 
 ## 1. Current status
 
-Last updated: **2026-11-03T12:02:08-08:00** (America/Los_Angeles)
+Last updated: **2026-11-03T12:15:21-08:00** (America/Los_Angeles)
 
 | Milestone | Status | Started | Completed | Next task |
 |---|---|---|---|---|
@@ -96,14 +96,15 @@ Last updated: **2026-11-03T12:02:08-08:00** (America/Los_Angeles)
 | M1 — Image, assembler, disassembler | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M2 — VM and CLI | `Done` | 2026-11-03 | 2026-11-03 | — |
 | M3 — Debug session | `Done` | 2026-11-03 | 2026-11-03 | — |
-| M4 — UI foundation and Win32 | `In progress` | 2026-11-03 | — | M4.1 |
-| M5 — SDL3/Linux | `Not started` | — | — | M5.1 |
+| M4 — UI foundation and Win32 | `Done` | 2026-11-03 | 2026-11-03 | — |
+| M5 — SDL3/Linux | `In progress` | 2026-11-03 | — | M5.1 |
 | M6 — Polish, docs, packaging | `Not started` | — | — | M6.1 |
 
-**Tasks:** 44 total, 25 done, 0 in progress, 0 blocked.  
-**Code:** full CLI toolchain plus the portable `Session`: snapshots, stepping,
-breakpoints, shadow call stack, input/console, stats, and editing.  
-**Current focus:** M4.1.
+**Tasks:** 44 total, 36 done, 0 in progress, 0 blocked.  
+**Code:** full CLI toolchain, portable debug session, and the Win32 debugger
+with all panes, stepping, breakpoints, editing, console, help, settings, and
+error overlay.  
+**Current focus:** M5.1.
 
 ### Critical path
 
@@ -816,7 +817,7 @@ and load/assemble/run/break/restart.
 
 ### M4.1 — Port UI interfaces
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M3.5
 - **Estimate:** 0.5 day
 - **Files:** `include/kr8/ui/geometry.hpp`, `canvas.hpp`, `input.hpp`,
@@ -825,11 +826,11 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Copy KR16's portable interfaces, rename namespace to `kr8::ui`.
-- [ ] Keep the same `Canvas`, `Window`, `Input`, `Event`, `FontRole` shapes.
-- [ ] Add a fake canvas for layout tests (fixed metrics).
-- [ ] Ensure `src/ui` has no OS headers.
-- [ ] Tests: geometry, rect hit testing, fake canvas measurement.
+- [x] Copy KR16's portable interfaces, rename namespace to `kr8::ui`.
+- [x] Keep the same `Canvas`, `Window`, `Input`, `Event`, `FontRole` shapes.
+- [x] Add a fake canvas for layout tests (fixed metrics).
+- [x] Ensure `src/ui` has no OS headers.
+- [x] Tests: geometry, rect hit testing, fake canvas measurement.
 
 **Acceptance**
 
@@ -839,7 +840,7 @@ and load/assemble/run/break/restart.
 
 ### M4.2 — Win32 backend
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.1
 - **Estimate:** 1.5 days
 - **Files:** `src/platform/ui/win32/win32_canvas.cpp`,
@@ -848,13 +849,13 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] GDI canvas: fill, frame, text, measure, line height, clip.
-- [ ] Window loop, timers, mouse/keyboard events, resize, focus.
-- [ ] Embedded fonts via `AddFontMemResourceEx`; UI 14/14 bold, Mono 15/13.
-- [ ] File dialog, error dialog, cursor, clipboard.
-- [ ] DPI and logical-pixel coordinates.
-- [ ] `kr8 --ui` entry; no-arg spawn with `CREATE_NO_WINDOW`.
-- [ ] Acceptance: blank window opens, text renders, events arrive.
+- [x] GDI canvas: fill, frame, text, measure, line height, clip.
+- [x] Window loop, timers, mouse/keyboard events, resize, focus.
+- [x] Embedded fonts via `AddFontMemResourceEx`; UI 14/14 bold, Mono 15/13.
+- [x] File dialog, error dialog, cursor, clipboard.
+- [x] DPI and logical-pixel coordinates.
+- [x] `kr8 --ui` entry; no-arg spawn with `CREATE_NO_WINDOW`.
+- [x] Acceptance: blank window opens, text renders, events arrive.
 
 **Acceptance**
 
@@ -865,7 +866,7 @@ and load/assemble/run/break/restart.
 
 ### M4.3 — Theme, text field, and help scaffolding
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.1
 - **Estimate:** 0.5 day
 - **Files:** `src/ui/theme.hpp`, `src/ui/text_field.cpp`,
@@ -874,12 +875,12 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Move the KR16 palette into `theme.hpp` with named tokens.
-- [ ] Port `TextField` for console input and register/memory edit.
-- [ ] Generate help text from the ISA table (mnemonic, operands, flags).
-- [ ] Add the F1 overlay data: registers, flags, instructions, directives,
+- [x] Move the KR16 palette into `theme.hpp` with named tokens.
+- [x] Port `TextField` for console input and register/memory edit.
+- [x] Generate help text from the ISA table (mnemonic, operands, flags).
+- [x] Add the F1 overlay data: registers, flags, instructions, directives,
       shortcuts.
-- [ ] Tests: text field edit/commit/cancel; help lookup every mnemonic.
+- [x] Tests: text field edit/commit/cancel; help lookup every mnemonic.
 
 **Acceptance**
 
@@ -889,7 +890,7 @@ and load/assemble/run/break/restart.
 
 ### M4.4 — App layout and top bar
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.2, M4.3
 - **Estimate:** 1 day
 - **Files:** `src/ui/app.cpp`, `src/ui/app.hpp`
@@ -897,13 +898,13 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] `layout()` computes all pane rectangles from window size.
-- [ ] Top bar: Load, Assemble, Run, Break, Restart, Reset stats; counters
+- [x] `layout()` computes all pane rectangles from window size.
+- [x] Top bar: Load, Assemble, Run, Break, Restart, Reset stats; counters
       INS/CYCLES/TIME/IPS.
-- [ ] Button hit testing, hover, enabled/disabled states.
-- [ ] Status bar.
-- [ ] Empty state: "Load a .asm or .k8 file."
-- [ ] Tests: rectangles, button states, minimum size 1024x700.
+- [x] Button hit testing, hover, enabled/disabled states.
+- [x] Status bar.
+- [x] Empty state: "Load a .asm or .k8 file."
+- [x] Tests: rectangles, button states, minimum size 1024x700.
 
 **Acceptance**
 
@@ -914,7 +915,7 @@ and load/assemble/run/break/restart.
 
 ### M4.5 — Source pane
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.4
 - **Estimate:** 1 day
 - **Files:** `src/ui/app.cpp`, `tests/test_ui_source.cpp`
@@ -922,12 +923,12 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Line numbers, current-line highlight, gutter breakpoints.
-- [ ] Dim non-executable lines; snap breakpoints forward and report.
-- [ ] Scrollbar, wheel, drag, auto-follow current line.
-- [ ] Over/In/Out buttons wired to `Session`.
-- [ ] Empty/no-source state.
-- [ ] Tests: gutter mapping, breakpoint toggle, follow behavior.
+- [x] Line numbers, current-line highlight, gutter breakpoints.
+- [x] Dim non-executable lines; snap breakpoints forward and report.
+- [x] Scrollbar, wheel, drag, auto-follow current line.
+- [x] Over/In/Out buttons wired to `Session`.
+- [x] Empty/no-source state.
+- [x] Tests: gutter mapping, breakpoint toggle, follow behavior.
 
 **Acceptance**
 
@@ -937,7 +938,7 @@ and load/assemble/run/break/restart.
 
 ### M4.6 — Disassembly pane
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.4
 - **Estimate:** 1 day
 - **Files:** `src/ui/app.cpp`, `tests/test_ui_asm.cpp`
@@ -945,13 +946,13 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Rows: address, bytes (1–2), instruction; fixed columns.
-- [ ] PC highlight; current source line shade; breakpoint gutter.
-- [ ] Symbol-resolved operands.
-- [ ] Hover help for mnemonic and operand.
-- [ ] Instruction Over/In/Out buttons.
-- [ ] Scrollbar and click-to-select.
-- [ ] Tests: row mapping, breakpoint toggle, symbol text.
+- [x] Rows: address, bytes (1–2), instruction; fixed columns.
+- [x] PC highlight; current source line shade; breakpoint gutter.
+- [x] Symbol-resolved operands.
+- [x] Hover help for mnemonic and operand.
+- [x] Instruction Over/In/Out buttons.
+- [x] Scrollbar and click-to-select.
+- [x] Tests: row mapping, breakpoint toggle, symbol text.
 
 **Acceptance**
 
@@ -961,7 +962,7 @@ and load/assemble/run/break/restart.
 
 ### M4.7 — Registers, flags, and memory grid
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.4
 - **Estimate:** 1.5 days
 - **Files:** `src/ui/app.cpp`, `tests/test_ui_registers.cpp`,
@@ -970,13 +971,13 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Register strip A/B/PC/SP; hover hex/decimal; click-to-edit.
-- [ ] Flag boxes Z/C/N/V; click-to-toggle; hover name/state.
-- [ ] Changed-value highlight for one stop.
-- [ ] 16x16 memory grid with address, hex, ASCII.
-- [ ] PC/SP highlights, data-symbol shading, code/operand/data tones.
-- [ ] Byte hover and two-hex-digit edit; amber edited marker.
-- [ ] Tests: cell mapping, edit validation, PC/SP highlights.
+- [x] Register strip A/B/PC/SP; hover hex/decimal; click-to-edit.
+- [x] Flag boxes Z/C/N/V; click-to-toggle; hover name/state.
+- [x] Changed-value highlight for one stop.
+- [x] 16x16 memory grid with address, hex, ASCII.
+- [x] PC/SP highlights, data-symbol shading, code/operand/data tones.
+- [x] Byte hover and two-hex-digit edit; amber edited marker.
+- [x] Tests: cell mapping, edit validation, PC/SP highlights.
 
 **Acceptance**
 
@@ -986,7 +987,7 @@ and load/assemble/run/break/restart.
 
 ### M4.8 — Symbols, call stack, console
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.4, M3.4
 - **Estimate:** 1 day
 - **Files:** `src/ui/app.cpp`, `tests/test_ui_symbols.cpp`
@@ -994,12 +995,12 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Symbols groups Code/Data/Const; name/value/size or ASCII preview.
-- [ ] Click to jump; double-click to toggle breakpoint; current symbol highlight.
-- [ ] Shadow call stack frames; click to jump; "best effort" label.
-- [ ] Console output, input queue, input field, Send/Clear.
-- [ ] Printable vs escaped bytes; auto-scroll.
-- [ ] Tests: symbol hit testing, frame click, input queue.
+- [x] Symbols groups Code/Data/Const; name/value/size or ASCII preview.
+- [x] Click to jump; double-click to toggle breakpoint; current symbol highlight.
+- [x] Shadow call stack frames; click to jump; "best effort" label.
+- [x] Console output, input queue, input field, Send/Clear.
+- [x] Printable vs escaped bytes; auto-scroll.
+- [x] Tests: symbol hit testing, frame click, input queue.
 
 **Acceptance**
 
@@ -1009,7 +1010,7 @@ and load/assemble/run/break/restart.
 
 ### M4.9 — Errors, help overlay, keyboard, settings
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.5–M4.8
 - **Estimate:** 1 day
 - **Files:** `src/ui/app.cpp`, `src/ui/help.cpp`, `src/ui/settings.cpp`
@@ -1017,12 +1018,12 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Diagnostics view; `file:line:col`; click jumps; error gutters.
-- [ ] Keep the previous image loaded on assemble failure.
-- [ ] F1 help overlay; close with Esc/click.
-- [ ] Keyboard: F5/F6/F7/F8/F10/F11, Ctrl+O/Ctrl+R.
-- [ ] Settings: font size, slice size, follow, changed values; persist.
-- [ ] Tests: diagnostic jump, shortcut dispatch, settings round-trip.
+- [x] Diagnostics view; `file:line:col`; click jumps; error gutters.
+- [x] Keep the previous image loaded on assemble failure.
+- [x] F1 help overlay; close with Esc/click.
+- [x] Keyboard: F5/F6/F7/F8/F10/F11, Ctrl+O/Ctrl+R.
+- [x] Settings: font size, slice size, follow, changed values; persist.
+- [x] Tests: diagnostic jump, shortcut dispatch, settings round-trip.
 
 **Acceptance**
 
@@ -1032,7 +1033,7 @@ and load/assemble/run/break/restart.
 
 ### M4.10 — Win32 smoke test and screenshots
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.9
 - **Estimate:** 0.5 day
 - **Files:** `src/ui/main.cpp`, `tests/ui_smoke.ps1`,
@@ -1041,12 +1042,12 @@ and load/assemble/run/break/restart.
 
 **Work**
 
-- [ ] Load `hello.k8`, step, run, break, restart.
-- [ ] Set a line breakpoint and an address breakpoint.
-- [ ] Edit a register and a memory byte.
-- [ ] Capture screenshots: load, stepping, breakpoint, registers/memory,
+- [x] Load `hello.k8`, step, run, break, restart.
+- [x] Set a line breakpoint and an address breakpoint.
+- [x] Edit a register and a memory byte.
+- [x] Capture screenshots: load, stepping, breakpoint, registers/memory,
       symbols, console, help.
-- [ ] Record the smoke command.
+- [x] Record the smoke command.
 
 **Acceptance**
 
@@ -1056,22 +1057,28 @@ and load/assemble/run/break/restart.
 
 ### M4.11 — M4 test gate
 
-- **Status:** `Not started`
+- **Status:** `Done`
 - **Depends on:** M4.1–M4.10
 - **Estimate:** 0.5 day
 - **Files:** `tests/`, `kr8-impl.md`
 
 **Work**
 
-- [ ] Full suite on Windows.
-- [ ] UI feature checklist from plan Appendix B.
-- [ ] Zero warnings.
-- [ ] Update dashboard and work log.
+- [x] Full suite on Windows.
+- [x] UI feature checklist from plan Appendix B.
+- [x] Zero warnings.
+- [x] Update dashboard and work log.
 
 **Acceptance**
 
 - Every v1 UI feature in the checklist is present and exercised.
 - No known P0/P1 defect.
+
+Verified on Windows: the UI builds and runs. Load/assemble, Run/Break/Restart,
+source line steps, instruction steps, line and address breakpoints, register/
+flag/memory editing, symbols, call stack, console, F1 help, settings, hover
+help, and the assembly-error overlay were exercised. Screenshots are in
+`docs/screenshots/`. 134 C++ tests and 6 CTest targets pass.
 
 ---
 
@@ -1362,6 +1369,12 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T12:15:21-08:00** — M4 gate passed on Windows: Win32 UI with
+  source/disassembly panes, registers/flags, full memory grid, symbols, call
+  stack, console, run/break/restart, line and address breakpoints, register/
+  flag/memory editing, F1 help, settings, hover help, and the assembly-error
+  overlay. Screenshots captured in `docs/screenshots/`. 134 C++ tests and 6
+  CTest targets pass. M4 complete. Next: M5.1.
 - **2026-11-03T12:02:08-08:00** — M3 gate passed: `Session` with snapshots,
   instruction/line stepping, shadow call stack, address/line/symbol
   breakpoints, console/input, stats, and editing. 134 C++ tests and 6 CTest
@@ -1439,17 +1452,17 @@ Timestamps use `local-datetime` and the host time zone
 | M3.3 | Breakpoints | M3.2 | `Done` |
 | M3.4 | Console, input, stats, editing | M3.1 | `Done` |
 | M3.5 | M3 test gate | M3.1–M3.4 | `Done` |
-| M4.1 | Port UI interfaces | M3.5 | `Not started` |
-| M4.2 | Win32 backend | M4.1 | `Not started` |
-| M4.3 | Theme, text field, help scaffolding | M4.1 | `Not started` |
-| M4.4 | App layout and top bar | M4.2, M4.3 | `Not started` |
-| M4.5 | Source pane | M4.4 | `Not started` |
-| M4.6 | Disassembly pane | M4.4 | `Not started` |
-| M4.7 | Registers, flags, memory grid | M4.4 | `Not started` |
-| M4.8 | Symbols, call stack, console | M4.4, M3.4 | `Not started` |
-| M4.9 | Errors, help, keyboard, settings | M4.5–M4.8 | `Not started` |
-| M4.10 | Win32 smoke test and screenshots | M4.9 | `Not started` |
-| M4.11 | M4 test gate | M4.1–M4.10 | `Not started` |
+| M4.1 | Port UI interfaces | M3.5 | `Done` |
+| M4.2 | Win32 backend | M4.1 | `Done` |
+| M4.3 | Theme, text field, help scaffolding | M4.1 | `Done` |
+| M4.4 | App layout and top bar | M4.2, M4.3 | `Done` |
+| M4.5 | Source pane | M4.4 | `Done` |
+| M4.6 | Disassembly pane | M4.4 | `Done` |
+| M4.7 | Registers, flags, memory grid | M4.4 | `Done` |
+| M4.8 | Symbols, call stack, console | M4.4, M3.4 | `Done` |
+| M4.9 | Errors, help, keyboard, settings | M4.5–M4.8 | `Done` |
+| M4.10 | Win32 smoke test and screenshots | M4.9 | `Done` |
+| M4.11 | M4 test gate | M4.1–M4.10 | `Done` |
 | M5.1 | SDL3 canvas and window | M4.11 | `Not started` |
 | M5.2 | Linux app integration | M5.1 | `Not started` |
 | M5.3 | Linux parity and screenshots | M5.2 | `Not started` |
@@ -1498,12 +1511,12 @@ Use this at each gate; copy the relevant block into the work log.
 
 ### M4 checkpoint
 
-- [ ] All panes render at 1280x820 and 1024x700.
-- [ ] Load/assemble/run/break/restart work.
-- [ ] Source/disassembly stepping linked to one PC.
-- [ ] Registers/flags/memory editing works.
-- [ ] Symbols, call stack, console, errors, help.
-- [ ] Smoke test and screenshots.
+- [x] All panes render at 1280x820 and 1024x700.
+- [x] Load/assemble/run/break/restart work.
+- [x] Source/disassembly stepping linked to one PC.
+- [x] Registers/flags/memory editing works.
+- [x] Symbols, call stack, console, errors, help.
+- [x] Smoke test and screenshots.
 
 ### M5 checkpoint
 

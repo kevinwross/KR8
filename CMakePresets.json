@@ -16,7 +16,8 @@
       },
       "binaryDir": "${sourceDir}/build/windows-vs2026",
       "cacheVariables": {
-        "KR8_BUILD_TESTS": "ON"
+        "KR8_BUILD_TESTS": "ON",
+        "KR8_BUILD_UI": "ON"
       }
     },
     {
@@ -26,7 +27,8 @@
       "binaryDir": "${sourceDir}/build/windows-ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "KR8_BUILD_TESTS": "ON"
+        "KR8_BUILD_TESTS": "ON",
+        "KR8_BUILD_UI": "ON"
       }
     },
     {
