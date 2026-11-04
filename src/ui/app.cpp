@@ -1204,8 +1204,7 @@ void App::draw_help(Canvas& canvas) {
         const int row = column == 0 ? i : i - split;
         const int x = overlay.left + 14 + column * column_width;
         const int y = overlay.top + 38 + row * line_height;
-        canvas.text(x, y, help_lines_[static_cast<std::size_t>(i)],
-                    column == 0 ? kText : kTextDim,
+        canvas.text(x, y, help_lines_[static_cast<std::size_t>(i)], kText,
                     FontRole::MonoSmall);
     }
     canvas.pop_clip();
