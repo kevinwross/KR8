@@ -11,7 +11,6 @@
 #include "kr8/ui/input.hpp"
 #include "kr8/ui/source_editor.hpp"
 #include "kr8/ui/window.hpp"
-#include "text_field.hpp"
 
 namespace kr8::ui {
 
@@ -111,6 +110,7 @@ private:
     void ensure_caret_visible();
     bool source_dirty() const;
     bool source_stale() const;
+    bool console_keyboard_active() const;
     std::string joined_source() const;
     void update_title();
     void show_confirm(ConfirmKind kind);
@@ -171,7 +171,6 @@ private:
     Rect stack_text_{};
     Rect console_pane_{};
     Rect console_text_{};
-    Rect console_input_{};
     Rect status_{};
 
     std::vector<Button> buttons_;
@@ -193,7 +192,6 @@ private:
     int editing_memory_ = -1;
     std::uint8_t editing_memory_address_ = 0;
     int selected_memory_address_ = -1;
-    bool console_focus_ = false;
     bool help_open_ = false;
     bool errors_open_ = false;
     bool settings_open_ = false;
@@ -225,7 +223,6 @@ private:
     int console_scroll_ = 0;
     int hover_button_ = -1;
 
-    TextField console_field_;
     Rect register_rects_[4]{};
     Rect flag_rects_[4]{};
     Point mouse_{};

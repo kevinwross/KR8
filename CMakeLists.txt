@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(kr8 VERSION 0.2.1 LANGUAGES CXX)
+project(kr8 VERSION 0.2.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -59,7 +59,6 @@ if(KR8_BUILD_UI)
   set(KR8_UI_SOURCES
     src/ui/app.cpp
     src/ui/help.cpp
-    src/ui/text_field.cpp
     src/ui/syntax.cpp
     src/resources/embedded_fonts.cpp
   )

@@ -1311,7 +1311,7 @@ These are not separate milestones; they are habits applied throughout.
 | Performance | Run in slices; no unbounded loops in the UI; step budget in the session. |
 | Compatibility | No OS headers outside `src/platform`; no Windows-only code in `src/ui`. |
 | Dependencies | No new third-party dependency without a licence entry and a plan note. |
-| Versioning | Tool `0.2.1`; image format `1.0`; bump deliberately. |
+| Versioning | Tool `0.2.2`; image format `1.0`; bump deliberately. |
 
 ---
 
@@ -1388,6 +1388,10 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T16:39:18-08:00** — Console hover input: while the pointer is over
+  the Console pane, printable keys feed `IN` immediately without the field or
+  Enter; Enter/Tab/Backspace queue `\n`/`09`/`08`. Added a hover accent and hint,
+  help/docs, and a screenshot. Tool version bumped to `0.2.2`; tag `v0.2.2`.
 - **2026-11-03T16:25:55-08:00** — Added `examples/updown.asm`: a `count`
   variable starting at 5, a `+ up  - down` banner, one count per line, `+`/`-`
   adjustment clamped to 1..9, ignored newlines/unknown keys, and non-blocking
@@ -1608,3 +1612,5 @@ Use this at each gate; copy the relevant block into the work log.
 - [x] Docs and screenshots updated.
 - [x] Version bumped to `0.2.0`; Windows and Ubuntu 22.04 artifacts refreshed.
 - [x] HLT leaves PC on the `HLT` instruction; `0.2.1` artifacts refreshed.
+- [x] Console hover input feeds `IN` without the input box or Enter; `0.2.2`
+      artifacts refreshed.

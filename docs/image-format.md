@@ -139,5 +139,5 @@ truncated or corrupt input.
 ## 11. Versioning
 
 Format version 1.0 is `0x0100`. A breaking layout change increments the major
-version; additive reserved fields do not. The tool version (`0.2.1`) is
+version; additive reserved fields do not. The tool version (`0.2.2`) is
 independent of the image format.

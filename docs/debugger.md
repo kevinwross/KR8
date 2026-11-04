@@ -44,7 +44,8 @@ console. On Linux it runs the SDL3 window in-process.
   ASCII columns. PC and SP bytes are highlighted.
 - **Symbols** (bottom middle) — code/data/constant symbols with addresses.
 - **Call stack** (bottom middle-right) — the shadow call stack, best effort.
-- **Console** (bottom right) — program output and an input field for `IN`.
+- **Console** (bottom right) — program output; hover the pane and type to feed
+  `IN`.
 - **Status bar** — PC, source line, instruction/cycle counts, state, message,
   and key hints.
 
@@ -142,8 +143,14 @@ them.
   to the caller's call instruction. It is exact for structured code and labelled
   "best effort" in the plan; `RET` without `CALL` and return-address mismatches
   are reported.
-- Click the console input, type, and press Enter. The text plus a newline is
-  queued for `IN`. `Esc` leaves the input field.
+- **Hover the Console pane and type.** Printable keys are pushed straight into
+  the `IN` queue as they arrive; no click or Enter is required for a single
+  character. Enter queues a newline, Tab queues `0x09`, and Backspace queues
+  `0x08`. Ctrl+V queues clipboard text.
+- The Console border and `keys go to IN` hint show when hover input is active.
+  There is no input box; the pane itself is the keyboard target.
+
+![Hovering the console and typing directly into IN](screenshots/ui-console-input.png)
 
 ## 8. Help and tooltips
 
@@ -196,7 +203,7 @@ debug session.
 | `Ctrl+A` / `Ctrl+C` / `Ctrl+X` / `Ctrl+V` | Select all / copy / cut / paste |
 | `Enter` | Newline with auto-indent (Edit mode) |
 | `Tab` | Insert four spaces (Edit mode) |
-| `Esc` | Close help/settings/errors, cancel edit, leave console input |
+| `Esc` | Close help/settings/errors, cancel edit |
 
 ## 12. Known limits
 

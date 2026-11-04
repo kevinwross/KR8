@@ -311,9 +311,8 @@ void App::layout() {
     stack_text_ = Rect{stack_pane_.left + 1, stack_pane_.top + kHeader,
                        stack_pane_.right - 1, stack_pane_.bottom - 1};
     console_text_ = Rect{console_pane_.left + 1, console_pane_.top + kHeader,
-                         console_pane_.right - 1, console_pane_.bottom - 28};
-    console_input_ = Rect{console_pane_.left + 6, console_pane_.bottom - 26,
-                          console_pane_.right - 6, console_pane_.bottom - 4};
+                         console_pane_.right - 1,
+                         console_pane_.bottom - 24};
 
     hover_button_ = -1;
     buttons_.clear();
@@ -1101,9 +1100,14 @@ void App::draw_stack(Canvas& canvas, const Snapshot& snapshot) {
 }
 
 void App::draw_console(Canvas& canvas, const Snapshot& snapshot) {
+    const bool active = console_keyboard_active();
     canvas.fill_rect(console_pane_, kPanel);
-    canvas.frame_rect(console_pane_, kBorder);
+    canvas.frame_rect(console_pane_, active ? kAccent : kBorder);
     draw_pane_header(canvas, console_pane_, "Console", 0);
+    if (active) {
+        text_right(canvas, console_pane_.right - 8, console_pane_.top + 8,
+                   "typing → IN", kGreen, FontRole::MonoSmall);
+    }
 
     const std::vector<std::string> lines = console_lines(snapshot.console);
     const int row_height = 16;
@@ -1126,9 +1130,11 @@ void App::draw_console(Canvas& canvas, const Snapshot& snapshot) {
     }
     canvas.pop_clip();
 
-    console_field_.focused = console_focus_;
-    text_field_paint(canvas, console_input_, console_field_,
-                     "input (Enter sends)");
+    const std::string hint = active
+                                 ? "keys go to IN"
+                                 : "hover here and type → IN";
+    canvas.text(console_pane_.left + 8, console_pane_.bottom - 20, hint,
+                active ? kGreen : kTextDim, FontRole::MonoSmall);
 }
 
 std::string App::status_text(const Snapshot& snapshot) const {
@@ -1553,6 +1559,13 @@ bool App::source_stale() const {
     return source_editing_ && editor_.text() != source_baseline_;
 }
 
+bool App::console_keyboard_active() const {
+    return session_.loaded() && !source_editing_ && !help_open_ &&
+           !settings_open_ && !errors_open_ &&
+           confirm_ == ConfirmKind::None && editing_register_ < 0 &&
+           editing_memory_ < 0 && console_pane_.contains(mouse_);
+}
+
 std::string App::joined_source() const {
     std::string result;
     const auto& lines = session_.source_lines();
@@ -1605,8 +1618,6 @@ void App::enter_edit() {
     source_editing_ = true;
     source_focus_ = true;
     source_dragging_ = false;
-    console_focus_ = false;
-    console_field_.focused = false;
     caret_visible_ = true;
     source_scroll_ = 0;
     source_hscroll_ = 0;
@@ -1861,8 +1872,6 @@ void App::open(const std::filesystem::path& path) {
     symbols_scroll_ = 0;
     stack_scroll_ = 0;
     console_scroll_ = 0;
-    console_focus_ = false;
-    console_field_.focused = false;
     follow_ = true;
     update_snapshot_history();
     update_title();
@@ -2132,8 +2141,6 @@ void App::handle_mouse_down(const MouseDown& down) {
                 std::abs(point.y - last_source_click_.y) < 5;
             last_source_click_ms_ = static_cast<std::uint64_t>(now);
             last_source_click_ = point;
-            console_focus_ = false;
-            console_field_.focused = false;
             source_focus_ = true;
             source_dragging_ = true;
             caret_visible_ = true;
@@ -2235,21 +2242,11 @@ void App::handle_mouse_down(const MouseDown& down) {
         }
         return;
     }
-    if (console_input_.contains(point)) {
-        console_focus_ = true;
-        console_field_.focused = true;
-        text_field_mouse_down(console_field_, console_input_, point.x, false);
-        window_.invalidate();
-        return;
-    }
     if (console_pane_.contains(point)) {
-        console_focus_ = true;
-        console_field_.focused = true;
+        source_focus_ = false;
         window_.invalidate();
         return;
     }
-    console_focus_ = false;
-    console_field_.focused = false;
     window_.invalidate();
 }
 
@@ -2259,6 +2256,7 @@ void App::handle_mouse_up(const MouseUp& up) {
 }
 
 void App::handle_mouse_move(const MouseMove& move) {
+    const bool console_before = console_keyboard_active();
     mouse_ = move.position;
     if (source_editing_ && source_dragging_) {
         Point point = mouse_;
@@ -2280,15 +2278,19 @@ void App::handle_mouse_move(const MouseMove& move) {
         disasm_text_.contains(mouse_) ? asm_row_at(mouse_.y) : -1;
     const int memory_hover =
         memory_text_.contains(mouse_) ? memory_cell_at(mouse_) : -1;
+    const bool console_after = console_keyboard_active();
     const bool changed = hover != hover_button_ ||
                          asm_hover != hover_asm_ ||
-                         memory_hover != hover_memory_;
+                         memory_hover != hover_memory_ ||
+                         console_before != console_after;
     hover_button_ = hover;
     hover_asm_ = asm_hover;
     hover_memory_ = memory_hover;
     if (changed) {
         CursorKind cursor = hover >= 0 ? CursorKind::Hand : CursorKind::Arrow;
         if (source_editing_ && source_text_.contains(mouse_)) {
+            cursor = CursorKind::Text;
+        } else if (console_after) {
             cursor = CursorKind::Text;
         }
         window_.set_cursor(cursor);
@@ -2529,30 +2531,37 @@ void App::handle_key(const KeyDown& key) {
         }
         return;
     }
-    if (console_focus_) {
-        if (key.key == Key::Escape) {
-            console_focus_ = false;
-            console_field_.focused = false;
-            window_.invalidate();
-            return;
-        }
-        if (key.key == Key::Enter) {
-            for (const char value : console_field_.text) {
-                session_.push_input(static_cast<std::uint8_t>(value));
+    if (console_keyboard_active()) {
+        std::optional<std::uint8_t> byte;
+        if (!key.ctrl && !key.alt) {
+            if (key.key == Key::Enter) {
+                byte = static_cast<std::uint8_t>('\n');
+            } else if (key.key == Key::Backspace) {
+                byte = static_cast<std::uint8_t>(0x08);
+            } else if (key.key == Key::Tab) {
+                byte = static_cast<std::uint8_t>(0x09);
             }
-            session_.push_input(static_cast<std::uint8_t>('\n'));
-            console_field_.text.clear();
-            console_field_.cursor = 0;
-            console_field_.anchor = 0;
-            console_field_.scroll = 0;
-            message_ = "input queued";
+        }
+        if (byte.has_value()) {
+            session_.push_input(*byte);
+            message_ = "IN queued";
             window_.invalidate();
             return;
         }
-        if (text_field_key(console_field_, key, window_)) {
+        if (key.ctrl && key.key == Key::V) {
+            const std::string clip = window_.clipboard_text();
+            for (const char value : clip) {
+                const auto ch = static_cast<unsigned char>(value);
+                if (ch >= 0x20 && ch != 0x7F) {
+                    session_.push_input(ch);
+                } else if (ch == '\n') {
+                    session_.push_input(static_cast<std::uint8_t>('\n'));
+                }
+            }
+            message_ = "clipboard queued";
             window_.invalidate();
+            return;
         }
-        return;
     }
     if (key.ctrl && key.key == Key::O) {
         request_open_file();
@@ -2606,16 +2615,21 @@ void App::handle_text_input(std::string_view text) {
         window_.invalidate();
         return;
     }
-    if (console_focus_) {
-        std::string filtered;
+    if (console_keyboard_active()) {
+        bool queued = false;
         for (const char value : text) {
-            if (value != '\r' && value != '\n') {
-                filtered.push_back(value);
+            const auto byte = static_cast<unsigned char>(value);
+            if (byte != '\r' && byte != '\n' && byte >= 0x20 &&
+                byte != 0x7F) {
+                session_.push_input(byte);
+                queued = true;
             }
         }
-        if (!filtered.empty() && text_field_text(console_field_, filtered)) {
+        if (queued) {
+            message_ = "IN queued";
             window_.invalidate();
         }
+        return;
     }
 }
 
@@ -2623,8 +2637,6 @@ void App::start_register_edit(int index) {
     editing_register_ = index;
     editing_memory_ = -1;
     edit_text_.clear();
-    console_focus_ = false;
-    console_field_.focused = false;
     message_ = "edit register; Enter applies, Esc cancels";
     window_.invalidate();
 }
@@ -2634,8 +2646,6 @@ void App::start_memory_edit(std::uint8_t address) {
     editing_memory_address_ = address;
     editing_register_ = -1;
     edit_text_.clear();
-    console_focus_ = false;
-    console_field_.focused = false;
     message_ = "edit byte; Enter applies, Esc cancels";
     window_.invalidate();
 }
@@ -2714,6 +2724,7 @@ void App::event(const Event& event) {
                 window_.invalidate();
             } else if constexpr (std::is_same_v<T, MouseLeave>) {
                 hover_button_ = -1;
+                mouse_ = Point{-10000, -10000};
                 window_.invalidate();
             }
         },
