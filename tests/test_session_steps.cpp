@@ -85,6 +85,19 @@ TEST(session_step_instruction_over_a_call) {
     CHECK_EQ(session.console(), std::string("Hi"));
 }
 
+TEST(session_hlt_keeps_pc_and_line_on_hlt) {
+    Session session;
+    std::string error;
+    CHECK(session.assemble_source("start:\n  NOP\n  HLT\n", "halt.asm",
+                                  error));
+    CHECK(session.step_instruction());  // NOP at 0
+    CHECK(session.step_instruction());  // HLT at 1
+    const Snapshot snapshot = session.snapshot();
+    CHECK_EQ(snapshot.pc, 1);
+    CHECK_EQ(snapshot.line, 3);
+    CHECK(snapshot.message.find("HLT") != std::string::npos);
+}
+
 TEST(session_step_instruction_out_of_a_function) {
     Session session;
     std::string error;

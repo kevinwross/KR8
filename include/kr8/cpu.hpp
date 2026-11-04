@@ -134,8 +134,8 @@ private:
     StepResult current_stop() const;
     StepResult step_ok(std::uint8_t opcode, std::uint8_t operand,
                        std::uint32_t cycles);
-    StepResult step_halt(std::uint8_t opcode, std::uint8_t operand,
-                         std::uint32_t cycles);
+    StepResult step_halt(std::uint8_t instruction_pc, std::uint8_t opcode,
+                         std::uint8_t operand, std::uint32_t cycles);
     StepResult step_break(std::uint8_t instruction_pc, std::uint8_t opcode,
                           std::uint32_t cycles);
     StepResult step_fault(FaultKind kind, std::uint8_t instruction_pc,

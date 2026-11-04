@@ -49,7 +49,7 @@ TEST(cpu_loads_and_stores_direct_and_indirect) {
     }
     CHECK_EQ(cpu.a(), 0x42);
     CHECK_EQ(memory.read8(0x20), 0x42);
-    CHECK_EQ(cpu.pc(), 11);
+    CHECK_EQ(cpu.pc(), 10);
 
     load_program(cpu, memory, {
         0x0B, 0x30,  // MOV B, #0x30
@@ -138,7 +138,7 @@ TEST(cpu_call_and_ret) {
 
     result = cpu.step(memory);
     CHECK(result.status == StepStatus::Halted);
-    CHECK_EQ(cpu.pc(), 0x03);
+    CHECK_EQ(cpu.pc(), 0x02);
 }
 
 TEST(cpu_nested_calls) {
@@ -158,7 +158,7 @@ TEST(cpu_nested_calls) {
         cpu.step(memory);
     }
     CHECK_EQ(cpu.a(), 0x55);
-    CHECK_EQ(cpu.pc(), 0x03);
+    CHECK_EQ(cpu.pc(), 0x02);
     CHECK_EQ(cpu.stack_depth(), 0);
     CHECK_EQ(cpu.sp(), 0xFF);
 }

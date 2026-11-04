@@ -1311,7 +1311,7 @@ These are not separate milestones; they are habits applied throughout.
 | Performance | Run in slices; no unbounded loops in the UI; step budget in the session. |
 | Compatibility | No OS headers outside `src/platform`; no Windows-only code in `src/ui`. |
 | Dependencies | No new third-party dependency without a licence entry and a plan note. |
-| Versioning | Tool `0.2.0`; image format `1.0`; bump deliberately. |
+| Versioning | Tool `0.2.1`; image format `1.0`; bump deliberately. |
 
 ---
 
@@ -1388,6 +1388,11 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T16:12:30-08:00** — HLT now leaves PC on the `HLT` instruction,
+  matching `BRK`/fault stop semantics. Source line, disassembly row, memory
+  byte, and PC register now align at halt. Updated ISA/debugger/plan docs and
+  tests; 145 C++ tests pass, Windows CTest 6/6, Linux UI CTest 8/8, sanitizer
+  7/7. Tool version and artifacts bumped to `0.2.1`; tag `v0.2.1`.
 - **2026-11-03T15:45:50-08:00** — Post-v1 built-in source editor implemented in
   explicit Edit mode: multiline editing, selection, clipboard, undo/redo,
   syntax highlighting, auto-indent, Ctrl+S/dirty prompts, stale-pane dimming,
@@ -1598,3 +1603,4 @@ Use this at each gate; copy the relevant block into the work log.
 - [x] Regression tests for editing and the nested call stack.
 - [x] Docs and screenshots updated.
 - [x] Version bumped to `0.2.0`; Windows and Ubuntu 22.04 artifacts refreshed.
+- [x] HLT leaves PC on the `HLT` instruction; `0.2.1` artifacts refreshed.

@@ -278,7 +278,8 @@ operand kinds:
 ```
 
 - The opcode determines whether an operand byte follows. No other width exists.
-- `PC` advances by 1 or 2. There is no alignment.
+- `PC` normally advances by 1 or 2. There is no alignment. `HLT`, `BRK`, and
+  faults leave `PC` on the stopping instruction.
 - A 2-byte instruction at `0xFE` is legal: it occupies `0xFE` and `0xFF`, and
   the next `PC` is `0x00`.
 - A 2-byte instruction at `0xFF` is illegal: it would fetch its operand from
@@ -297,7 +298,7 @@ direct memory address, `[B]` is memory at `B`, and `t` is an absolute target.
 
 | Opcode | Mnemonic | Flags | Operation |
 |---|---|---|---|
-| `0x00` | `HLT` | — | Stop the CPU normally |
+| `0x00` | `HLT` | — | Stop the CPU; `PC` stays on `HLT` |
 | `0x01` | `NOP` | — | No operation |
 | `0x02` | `BRK` | — | Halt with reason "break"; debugger-resumable |
 | `0x03` | `RET` | — | `PC <- pop` |
@@ -461,7 +462,10 @@ convenience, not a change to `IN`.
 | `StackUnderflow` | Pop/`RET` at depth 0 | Faulting instruction | Restart |
 | `PcWrap` | 2-byte instruction at `0xFF` | `0xFF` | Restart |
 | `Break` | `BRK` | The `BRK` | Continue/step skips it |
-| `Halt` | `HLT` | The instruction after `HLT` | Restart |
+| `Halt` | `HLT` | The `HLT` | Restart |
+
+`HLT` is a normal stop and leaves `PC` on the `HLT`; source, disassembly, memory,
+and `PC` stay aligned in the debugger.
 
 `BRK` is a teaching/debugging stop, not a CPU exception. The CPU halts with
 `Break` and leaves `PC` on the `BRK`. The session's Continue/Step first advances

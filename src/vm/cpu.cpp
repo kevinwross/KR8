@@ -124,10 +124,11 @@ StepResult Cpu::step_ok(std::uint8_t opcode, std::uint8_t operand,
     return result;
 }
 
-StepResult Cpu::step_halt(std::uint8_t opcode, std::uint8_t operand,
-                          std::uint32_t cycles) {
+StepResult Cpu::step_halt(std::uint8_t instruction_pc, std::uint8_t opcode,
+                          std::uint8_t operand, std::uint32_t cycles) {
     halted_ = true;
     halt_kind_ = HaltKind::Hlt;
+    pc_ = instruction_pc;
     ++instructions_;
     cycles_ += cycles;
     last_opcode_ = opcode;
@@ -135,7 +136,7 @@ StepResult Cpu::step_halt(std::uint8_t opcode, std::uint8_t operand,
 
     StepResult result;
     result.status = StepStatus::Halted;
-    result.pc = pc_;
+    result.pc = instruction_pc;
     result.cycles = cycles;
     result.opcode = opcode;
     result.operand = operand;
@@ -266,7 +267,7 @@ StepResult Cpu::step(Memory& memory) {
 
     switch (info->op) {
         case Op::Hlt:
-            return step_halt(opcode, operand, cycles);
+            return step_halt(instruction_pc, opcode, operand, cycles);
         case Op::Nop:
             return step_ok(opcode, operand, cycles);
         case Op::Brk:

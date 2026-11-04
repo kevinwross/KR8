@@ -31,7 +31,7 @@ TEST(session_address_breakpoint_stops_and_continues) {
 
     const RunStop next = session.run_slice(100);
     CHECK(next == RunStop::Halted);
-    CHECK_EQ(session.snapshot().pc, 7);
+    CHECK_EQ(session.snapshot().pc, 6);
     CHECK_EQ(session.snapshot().a, 3);
     CHECK_EQ(session.snapshot().b, 2);
 }

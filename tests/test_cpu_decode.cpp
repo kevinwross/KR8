@@ -99,7 +99,8 @@ TEST(cpu_hlt_stops) {
     Memory memory;
     const StepResult result = run_once(cpu, memory, {0x00});
     CHECK(result.status == StepStatus::Halted);
-    CHECK_EQ(cpu.pc(), 1);
+    CHECK_EQ(result.pc, 0);
+    CHECK_EQ(cpu.pc(), 0);
     CHECK(cpu.halted());
     CHECK(cpu.halt_kind() == HaltKind::Hlt);
     CHECK(!cpu.resume_from_break());
@@ -131,5 +132,5 @@ TEST(cpu_step_after_halt_is_idempotent) {
     const StepResult again = cpu.step(memory);
     CHECK(again.status == StepStatus::Halted);
     CHECK_EQ(cpu.instructions(), instructions);
-    CHECK_EQ(cpu.pc(), 1);
+    CHECK_EQ(cpu.pc(), 0);
 }

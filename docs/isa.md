@@ -123,12 +123,14 @@ operand kinds:
 ```
 
 - The opcode determines whether an operand byte follows.
-- `PC` advances by 1 or 2.
+- `PC` normally advances by 1 or 2. `HLT`, `BRK`, and faults are stops, not
+  fall-through instructions: `PC` remains on the stopping instruction.
 - A 2-byte instruction at `0xFE` is legal: it occupies `0xFE` and `0xFF`, and
   the next `PC` is `0x00`.
 - A 2-byte instruction at `0xFF` is illegal: its operand would be fetched from
   `0x100`, which wraps to `0x00`. The assembler rejects it; the CPU faults.
-- A 1-byte instruction at `0xFF` is legal and wraps `PC` to `0x00`.
+- A 1-byte instruction at `0xFF` is legal and would wrap `PC` to `0x00`; an
+  `HLT` at `0xFF` leaves `PC` at `0xFF`.
 - `CALL` pushes the address after the call (one byte). A call at `0xFE` pushes
   `0x00`.
 - `RET` pops one byte into `PC`.
@@ -140,7 +142,7 @@ value is defined after the instruction.
 
 | Opcode | Mnemonic | Flags | Operation |
 |---|---|---|---|
-| `0x00` | `HLT` | — | Stop the CPU normally |
+| `0x00` | `HLT` | — | Stop the CPU; `PC` stays on `HLT` |
 | `0x01` | `NOP` | — | No operation |
 | `0x02` | `BRK` | — | Halt with a breakpoint stop |
 | `0x03` | `RET` | — | `PC <- pop` |
@@ -268,7 +270,10 @@ wait:
 | `StackUnderflow` | Pop/`RET` at depth 0 | Faulting instruction | Restart |
 | `PcWrap` | 2-byte instruction at `0xFF` | `0xFF` | Restart |
 | `Break` | `BRK` | The `BRK` | Continue/step skips it |
-| `Halt` | `HLT` | The instruction after `HLT` | Restart |
+| `Halt` | `HLT` | The `HLT` | Restart |
+
+`HLT` is a normal stop and leaves `PC` on the `HLT` instruction. This keeps the
+source line, disassembly row, memory byte, and `PC` register aligned.
 
 `BRK` is a teaching/debugging stop. The CPU halts with `Break` and leaves `PC`
 on the `BRK`; the session advances `PC` and clears the halt on Continue/Step.

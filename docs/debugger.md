@@ -71,6 +71,10 @@ Source-line stepping uses the line table and the shadow call depth:
 Instruction stepping is exact: one CPU instruction per step. `Run` executes in
 short slices so the window stays responsive; `Break` stops between slices.
 
+`HLT` is a normal stop and leaves PC on the `HLT` instruction. Running to the end
+of a program therefore leaves the source line, disassembly row, memory byte, and
+`PC` pointing at the same instruction.
+
 ## 4. Breakpoints
 
 - **Line breakpoint** — click the source gutter. A red square appears.
