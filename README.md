@@ -97,6 +97,7 @@ kr8 version | help
 | `examples/memory.asm` | `ST [B]`, pointer walking | writes 1..8 to `buf` |
 | `examples/stack.asm` | `PUSH`/`POP` | `!A` |
 | `examples/flags.asm` | `CMP`, signed branch | `G` |
+| `examples/updown.asm` | `IN`, memory variable, clamping | interactive `+`/`-` counter |
 
 ## Documentation
 

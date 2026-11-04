@@ -16,6 +16,7 @@ kr8 run hello.k8
 | `memory.asm` | `ST [B]`, pointer walking, `CMP` | no output; `buf` = `01..08` |
 | `stack.asm` | `PUSH`/`POP` preserving `A` | `!A` |
 | `flags.asm` | `CMP`, `JGT` signed branch | `G` |
+| `updown.asm` | `IN` polling, read-modify-write memory, clamping | `+ up  - down`, then `5`, `6`, etc. |
 
 All examples are deliberately small enough to leave generous stack headroom.
 The assembler prints the exact code/data sizes and remaining stack space.

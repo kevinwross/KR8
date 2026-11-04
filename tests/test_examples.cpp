@@ -13,7 +13,7 @@ TEST(examples_assemble_round_trip_and_disassemble) {
     const std::filesystem::path directory = KR8_EXAMPLES_DIR;
     const std::vector<std::string> names = {
         "hello.asm", "count.asm", "echo.asm", "puts.asm",
-        "memory.asm", "stack.asm", "flags.asm",
+        "memory.asm", "stack.asm", "flags.asm", "updown.asm",
     };
     for (const auto& name : names) {
         const std::filesystem::path path = directory / name;

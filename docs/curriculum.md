@@ -80,6 +80,13 @@ Use `examples/echo.asm`.
 
 Exercise: echo uppercase letters as lowercase (or vice versa) until Enter.
 
+Then load `examples/updown.asm`. It keeps a `count` variable in memory, starts at
+5, and uses `+`/`-` to move it within 1..9. Point out the read-modify-write
+sequence `LD A, [count]` / `INC A` / `ST [count], A`, the clamp branches, and the
+non-blocking polling loop.
+
+Exercise: change the starting count or add a reset key.
+
 ## Lesson 8 — Debugging
 
 - Breakpoints: source line, disassembly address, symbol.

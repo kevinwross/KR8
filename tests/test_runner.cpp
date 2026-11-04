@@ -54,6 +54,21 @@ TEST(runner_puts_output) {
     CHECK_EQ(result.output, std::string("KR8\n"));
 }
 
+TEST(runner_updown_input_and_limits) {
+    const AsmResult assembled = assemble_example("updown.asm");
+    CHECK(assembled.ok);
+    if (!assembled.ok) {
+        return;
+    }
+    RunOptions options;
+    options.input = {'+', '+', '-', '\n', '+'};
+    options.max_instructions = 1000;
+    const RunResult result = run_image(assembled.image, options);
+    CHECK(result.status == RunStatus::Budget);
+    CHECK_EQ(result.output,
+             std::string("+ up  - down\n5\n6\n7\n6\n7\n"));
+}
+
 TEST(runner_stack_output) {
     const AsmResult assembled = assemble_example("stack.asm");
     CHECK(assembled.ok);

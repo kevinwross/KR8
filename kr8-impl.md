@@ -1388,6 +1388,10 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T16:25:55-08:00** — Added `examples/updown.asm`: a `count`
+  variable starting at 5, a `+ up  - down` banner, one count per line, `+`/`-`
+  adjustment clamped to 1..9, ignored newlines/unknown keys, and non-blocking
+  polling. Added example/runner coverage; 146 C++ tests pass.
 - **2026-11-03T16:12:30-08:00** — HLT now leaves PC on the `HLT` instruction,
   matching `BRK`/fault stop semantics. Source line, disassembly row, memory
   byte, and PC register now align at halt. Updated ISA/debugger/plan docs and
