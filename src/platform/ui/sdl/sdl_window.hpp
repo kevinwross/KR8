@@ -24,6 +24,9 @@ public:
     void set_timer(int milliseconds, bool enabled) override;
     void open_file(FileCallback callback, std::string_view title,
                    std::string_view filter) override;
+    void save_file(FileCallback callback, std::string_view title,
+                   std::string_view filter,
+                   const std::filesystem::path& default_path) override;
     void show_error(std::string_view title,
                     std::string_view message) override;
     std::string clipboard_text() const override;

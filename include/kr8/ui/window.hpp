@@ -46,6 +46,9 @@ public:
     virtual void set_timer(int milliseconds, bool enabled) = 0;
     virtual void open_file(FileCallback callback, std::string_view title,
                            std::string_view filter) = 0;
+    virtual void save_file(FileCallback callback, std::string_view title,
+                           std::string_view filter,
+                           const std::filesystem::path& default_path) = 0;
     virtual void show_error(std::string_view title,
                             std::string_view message) = 0;
     virtual std::string clipboard_text() const = 0;

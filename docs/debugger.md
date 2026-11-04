@@ -30,7 +30,7 @@ console. On Linux it runs the SDL3 window in-process.
 ![Initial debugger](screenshots/ui-initial.png)
 
 - **Top bar** — Load, Assemble, Run, Break, Restart, Reset stats, Settings;
-  INS/CYC/TIME/IPS counters on the right.
+  INS/CYC counters on the right.
 - **Source** (top left) — assembly source with line numbers, syntax colouring,
   current-line highlight, breakpoint gutter, and Over/In/Out line-step buttons.
   The **Edit** button opens the built-in multiline editor. Non-executable lines
@@ -39,15 +39,17 @@ console. On Linux it runs the SDL3 window in-process.
   and symbol-aware text. The PC row is highlighted; address breakpoints live in
   the left gutter.
 - **Registers** (under disassembly) — A, B, PC, SP, and the Z/C/N/V flags.
-  Changed values are green; changed flags get an amber border.
+  A and B also show their eight bits; click a bit to toggle it. Changed values
+  are green; changed flags and bits get an amber border.
 - **Memory** (bottom left) — the full 16×16 memory map with address, hex, and
   ASCII columns. PC and SP bytes are highlighted.
 - **Symbols** (bottom middle) — code/data/constant symbols with addresses.
 - **Call stack** (bottom middle-right) — the shadow call stack, best effort.
 - **Console** (bottom right) — program output; hover the pane and type to feed
   `IN`.
-- **Status bar** — PC, source line, instruction/cycle counts, state, message,
-  and key hints.
+- **Status bar** — PC, source line, state, message, TIME, IPS, and key hints.
+
+![Status bar with TIME and IPS](screenshots/ui-status.png)
 
 ## 3. Running and stepping
 
@@ -114,6 +116,12 @@ In Edit mode:
 - On failure, Edit mode stays open and the diagnostics overlay appears.
 - While editing, Disassembly and Symbols are marked `(stale)` and dimmed; the
   last image remains visible as context.
+- **Save As** and **Discard** appear to the left of the Edit button only while
+  Edit mode is active. **Save As** writes the current buffer to a new `.asm` file
+  and switches the working path to it. The dialog starts on the current filename
+  and directory.
+- **Discard** returns to Debug mode without keeping the unsaved buffer. It asks
+  for confirmation when the buffer differs from the last save.
 
 `Esc` leaves Edit mode; if there are unsaved changes, KR8 asks before discarding
 them.
@@ -122,11 +130,15 @@ them.
 
 ## 6. Registers, flags, and memory
 
+![Register bits](screenshots/ui-registers.png)
+
 ![Memory editing](screenshots/ui-memory-edit.png)
 
 - Click a register value (A, B, PC, SP), type one or two hex digits, and press
   Enter. Esc cancels. Editing PC moves the current line; editing SP invalidates
   the shadow call stack until Restart.
+- A and B show bit 7 through bit 0. Click a bit cell to toggle that bit; this is
+  useful for watching shifts, rotates, and masks.
 - Click a flag box to toggle Z, C, N, or V.
 - Click a memory byte, type two hex digits, and press Enter. Editing a code byte
   changes what executes.
@@ -170,7 +182,8 @@ them.
   instruction.
 - **Highlight changed values** — colour registers green and mark changed flags
   after a step or run.
-- The run slice size is currently fixed at 50,000 instructions per 8 ms slice.
+- **Write .lst listing after assemble** — writes `source.lst` next to the source
+  file each time assembly succeeds.
 
 Settings are stored in `%APPDATA%\KR8\settings.ini` on Windows, or
 `$XDG_CONFIG_HOME/kr8/settings.ini` / `~/.config/kr8/settings.ini` on Linux.

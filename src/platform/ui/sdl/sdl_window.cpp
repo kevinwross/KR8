@@ -164,6 +164,20 @@ void SdlWindow::open_file(FileCallback callback, std::string_view title,
                            filters, 2, nullptr, false);
 }
 
+void SdlWindow::save_file(FileCallback callback, std::string_view title,
+                          std::string_view filter,
+                          const std::filesystem::path& default_path) {
+    (void)title;
+    (void)filter;
+    file_callback_ = std::move(callback);
+    static const SDL_DialogFileFilter filters[] = {
+        {"KR8 source", "asm"},
+        {"All files", "*"}};
+    const std::string initial = default_path.string();
+    SDL_ShowSaveFileDialog(&SdlWindow::on_file_selected, this, window_, filters,
+                           2, initial.empty() ? nullptr : initial.c_str());
+}
+
 void SDLCALL SdlWindow::on_file_selected(void* userdata,
                                          const char* const* files,
                                          int filter) {

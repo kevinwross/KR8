@@ -335,26 +335,44 @@ void App::layout() {
     add_top("Settings", 70, Action::Settings, false);
 
     auto add_group = [&](const Rect& pane, int group, bool source_group) {
-        const int count = source_group ? 4 : 3;
-        const int button_width = source_group ? 48 : 44;
+        struct Spec {
+            const char* label;
+            int width;
+            Action action;
+        };
+        std::vector<Spec> specs;
+        if (source_group) {
+            if (source_editing_) {
+                specs = {{"Save As", 64, Action::SaveSourceAs},
+                         {"Discard", 62, Action::DiscardEdit},
+                         {"Edit", 48, Action::EditSource},
+                         {"Over", 48, Action::CStepOver},
+                         {"In", 48, Action::CStepIn},
+                         {"Out", 48, Action::CStepOut}};
+            } else {
+                specs = {{"Edit", 48, Action::EditSource},
+                         {"Over", 48, Action::CStepOver},
+                         {"In", 48, Action::CStepIn},
+                         {"Out", 48, Action::CStepOut}};
+            }
+        } else {
+            specs = {{"Over", 44, Action::AStepOver},
+                     {"In", 44, Action::AStepIn},
+                     {"Out", 44, Action::AStepOut}};
+        }
         const int gap = 4;
-        const int start_x =
-            pane.right - 6 - (count * button_width + (count - 1) * gap);
+        int total = 0;
+        for (const Spec& spec : specs) {
+            total += spec.width;
+        }
+        total += static_cast<int>(specs.size() - 1) * gap;
+        int left = pane.right - 6 - total;
         const int y = pane.top + 4;
-        const Action source_actions[4] = {
-            Action::EditSource, Action::CStepOver, Action::CStepIn,
-            Action::CStepOut};
-        const Action asm_actions[3] = {Action::AStepOver, Action::AStepIn,
-                                       Action::AStepOut};
-        const char* source_labels[4] = {"Edit", "Over", "In", "Out"};
-        const char* asm_labels[3] = {"Over", "In", "Out"};
-        for (int i = 0; i < count; ++i) {
-            const int left = start_x + i * (button_width + gap);
-            buttons_.push_back(Button{
-                Rect{left, y, left + button_width, y + 22},
-                source_group ? source_labels[i] : asm_labels[i],
-                source_group ? source_actions[i] : asm_actions[i], true,
-                false, group});
+        for (const Spec& spec : specs) {
+            buttons_.push_back(
+                Button{Rect{left, y, left + spec.width, y + 22}, spec.label,
+                       spec.action, true, false, group});
+            left += spec.width + gap;
         }
     };
     add_group(source_pane_, 1, true);
@@ -377,6 +395,12 @@ void App::update_buttons() {
             case Action::EditSource:
                 button.enabled = loaded && source && !running;
                 button.label = source_editing_ ? "Editing" : "Edit";
+                break;
+            case Action::SaveSourceAs:
+                button.enabled = source_editing_;
+                break;
+            case Action::DiscardEdit:
+                button.enabled = source_editing_;
                 break;
             case Action::Run:
                 button.enabled = loaded && !running && !source_editing_;
@@ -474,21 +498,12 @@ void App::draw_top(Canvas& canvas, const Snapshot& snapshot) {
         }
     }
 
-    const std::uint64_t elapsed = session_.run_time_ms();
-    const std::uint64_t rate =
-        elapsed > 0 ? (snapshot.instructions * 1000) / elapsed : 0;
     const int y = 10;
     text_right(canvas, size_.width - 10, y,
                "INS " + std::to_string(snapshot.instructions), kTextDim,
                FontRole::MonoSmall);
     text_right(canvas, size_.width - 130, y,
                "CYC " + std::to_string(snapshot.cycles), kTextDim,
-               FontRole::MonoSmall);
-    text_right(canvas, size_.width - 255, y,
-               "TIME " + std::to_string(elapsed) + "ms", kTextDim,
-               FontRole::MonoSmall);
-    text_right(canvas, size_.width - 390, y,
-               "IPS " + std::to_string(rate), kTextDim,
                FontRole::MonoSmall);
 }
 
@@ -846,36 +861,66 @@ void App::draw_registers(Canvas& canvas, const Snapshot& snapshot) {
                                     snapshot.sp};
     const std::uint8_t old_values[4] = {
         previous_.a, previous_.b, previous_.pc, previous_.sp};
-    const int column_width = (register_pane_.width() - 20) / 4;
-    for (int i = 0; i < 4; ++i) {
-        const int x = register_pane_.left + 10 + i * column_width;
-        canvas.text(x, register_pane_.top + 24, names[i], kTextDim,
-                    FontRole::MonoSmall);
-        register_rects_[i] = Rect{x + 20, register_pane_.top + 22,
-                                  x + column_width - 8,
-                                  register_pane_.top + 42};
-        if (editing_register_ == i) {
-            canvas.fill_rect(register_rects_[i], kHighlight);
-            canvas.frame_rect(register_rects_[i], kAccent);
-            canvas.text(x + 24, register_pane_.top + 25,
-                        edit_text_.empty() ? "_" : edit_text_, kText,
-                        FontRole::MonoSmall);
+    const int left = register_pane_.left + 10;
+    const int bits_x = left + 104;
+    const int a_y = register_pane_.top + 30;
+    const int b_y = register_pane_.top + 54;
+    const int pc_x = left + 286;
+    const int sp_x = left + 430;
+
+    for (int bit = 0; bit < 8; ++bit) {
+        const int label_x = bits_x + (7 - bit) * 18 + 5;
+        canvas.text(label_x, register_pane_.top + 15,
+                    std::to_string(bit), kTextDim, FontRole::MonoSmall);
+    }
+    auto draw_value = [&](int index, int x, int y) {
+        canvas.text(x, y - 1, names[index], kTextDim, FontRole::MonoSmall);
+        register_rects_[index] = Rect{x + 20, y - 3, x + 76, y + 17};
+        if (editing_register_ == index) {
+            canvas.fill_rect(register_rects_[index], kHighlight);
+            canvas.frame_rect(register_rects_[index], kAccent);
+            canvas.text(x + 24, y, edit_text_.empty() ? "_" : edit_text_,
+                        kText, FontRole::MonoSmall);
         } else {
             const bool changed =
-                show_changes_ && have_previous_ && values[i] != old_values[i];
-            canvas.text(x + 24, register_pane_.top + 25,
-                        hex2(values[i]), changed ? kGreen : kText,
-                        FontRole::MonoSmall);
+                show_changes_ && have_previous_ && values[index] != old_values[index];
+            canvas.text(x + 24, y, hex2(values[index]),
+                        changed ? kGreen : kText, FontRole::MonoSmall);
+        }
+    };
+    draw_value(0, left, a_y);
+    draw_value(1, left, b_y);
+    draw_value(2, pc_x, register_pane_.top + 80);
+    draw_value(3, sp_x, register_pane_.top + 80);
+
+    for (int reg = 0; reg < 2; ++reg) {
+        const int y = reg == 0 ? a_y : b_y;
+        for (int bit = 0; bit < 8; ++bit) {
+            const int x = bits_x + (7 - bit) * 18;
+            bit_rects_[reg][bit] = Rect{x, y - 3, x + 16, y + 15};
+            const std::uint8_t mask = static_cast<std::uint8_t>(1u << bit);
+            const bool set = (values[reg] & mask) != 0;
+            const bool changed =
+                show_changes_ && have_previous_ &&
+                (values[reg] & mask) != (old_values[reg] & mask);
+            canvas.fill_rect(bit_rects_[reg][bit],
+                             set ? kAccentDim : kPanel);
+            canvas.frame_rect(bit_rects_[reg][bit],
+                              changed ? kAmber : (set ? kAccent : kBorder));
+            text_center(canvas, bit_rects_[reg][bit], set ? "1" : "0",
+                        set ? kText : kTextDim, FontRole::MonoSmall);
         }
     }
 
-    const int flags_y = register_pane_.top + 54;
-    canvas.text(register_pane_.left + 10, flags_y, "FLAGS", kTextDim,
-                FontRole::MonoSmall);
+    canvas.fill_rect(Rect{left, register_pane_.top + 101,
+                          register_pane_.right - 10, register_pane_.top + 102},
+                     kBorder);
+    const int flags_y = register_pane_.top + 108;
+    canvas.text(left, flags_y, "FLAGS", kTextDim, FontRole::MonoSmall);
     const char* flag_names[4] = {"Z", "C", "N", "V"};
     for (int i = 0; i < 4; ++i) {
-        const int left = register_pane_.left + 62 + i * 30;
-        flag_rects_[i] = Rect{left, flags_y - 2, left + 18, flags_y + 16};
+        const int flag_x = left + 52 + i * 30;
+        flag_rects_[i] = Rect{flag_x, flags_y - 2, flag_x + 18, flags_y + 16};
         const std::uint8_t mask = static_cast<std::uint8_t>(1u << i);
         const bool set = (snapshot.flags & mask) != 0;
         const bool changed = show_changes_ && have_previous_ &&
@@ -1149,9 +1194,7 @@ std::string App::status_text(const Snapshot& snapshot) const {
         return out.str();
     }
     std::ostringstream out;
-    out << "pc=0x" << hex2(snapshot.pc) << "  line " << snapshot.line
-        << "  instr " << snapshot.instructions << "  cycles "
-        << snapshot.cycles;
+    out << "pc=0x" << hex2(snapshot.pc) << "  line " << snapshot.line;
     out << (snapshot.running ? "  [running]" : "  [paused]");
     return out.str();
 }
@@ -1162,12 +1205,35 @@ void App::draw_status(Canvas& canvas, const Snapshot& snapshot) {
                      kBorder);
     canvas.text(status_.left + 8, status_.top + 4, status_text(snapshot),
                 kTextDim, FontRole::MonoSmall);
+
+    const std::string hint =
+        source_editing_
+            ? "Ctrl+S save  F8 assemble  Ctrl+Z undo  F1 help"
+            : "F5 run  F6 break  F10 line  F11 step  F1 help";
+    const int hint_width = canvas.measure(hint, FontRole::MonoSmall).width;
+    const int hint_left = status_.right - 8 - hint_width;
+    text_right(canvas, status_.right - 8, status_.top + 4, hint, kTextDim,
+               FontRole::MonoSmall);
+
+    const std::uint64_t elapsed = session_.run_time_ms();
+    const std::uint64_t rate =
+        elapsed > 0 ? (snapshot.instructions * 1000) / elapsed : 0;
+    const std::string metrics =
+        "TIME " + std::to_string(elapsed) + "ms   IPS " +
+        std::to_string(rate);
+    const int metrics_width =
+        canvas.measure(metrics, FontRole::MonoSmall).width;
+    const int metrics_right = hint_left - 16;
+    const int metrics_left = metrics_right - metrics_width;
+    text_right(canvas, metrics_right, status_.top + 4, metrics, kTextDim,
+               FontRole::MonoSmall);
+
     const std::string message =
         !message_.empty() ? message_ : snapshot.message;
-    if (!message.empty()) {
-        canvas.push_clip(Rect{status_.left + 370, status_.top,
-                              status_.right - 330, status_.bottom});
-        canvas.text(status_.left + 380, status_.top + 4, "   " + message,
+    if (!message.empty() && metrics_left > status_.left + 310) {
+        canvas.push_clip(Rect{status_.left + 300, status_.top,
+                              metrics_left - 8, status_.bottom});
+        canvas.text(status_.left + 300, status_.top + 4, message,
                     source_editing_
                         ? kAmber
                         : (message.find("error") != std::string::npos ||
@@ -1177,11 +1243,6 @@ void App::draw_status(Canvas& canvas, const Snapshot& snapshot) {
                     FontRole::MonoSmall);
         canvas.pop_clip();
     }
-    text_right(canvas, status_.right - 8, status_.top + 4,
-               source_editing_
-                   ? "Ctrl+S save  F8 assemble  Ctrl+Z undo  F1 help"
-                   : "F5 run  F6 break  F10 line  F11 step  F1 help",
-               kTextDim, FontRole::MonoSmall);
 }
 
 void App::draw_help(Canvas& canvas) {
@@ -1367,10 +1428,11 @@ void App::draw_settings(Canvas& canvas) {
     };
     const std::string follow_mark = follow_ ? "[x]" : "[ ]";
     const std::string changes_mark = show_changes_ ? "[x]" : "[ ]";
+    const std::string listing_mark = auto_lst_ ? "[x]" : "[ ]";
     std::vector<std::string> labels = {
         follow_mark + "  Follow PC while stepping and running",
         changes_mark + "  Highlight changed registers and flags",
-        "Run slice: 50,000 instructions",
+        listing_mark + "  Write .lst listing after assemble",
         "Close",
     };
     for (int i = 0; i < static_cast<int>(labels.size()); ++i) {
@@ -1383,12 +1445,12 @@ void App::draw_settings(Canvas& canvas) {
             settings_rows_.push_back(HitRow{button, i});
             continue;
         }
-        if (i < 2) {
+        if (i < 3) {
             canvas.fill_rect(row, kPanelAlt);
         }
         canvas.text(row.left + 8, row.top + 5, labels[i], kText,
                     FontRole::MonoSmall);
-        if (i < 2) {
+        if (i < 3) {
             settings_rows_.push_back(HitRow{row, i});
         }
     }
@@ -1465,6 +1527,16 @@ void App::activate(Action action) {
             break;
         case Action::EditSource:
             toggle_edit();
+            break;
+        case Action::SaveSourceAs:
+            save_source_as();
+            break;
+        case Action::DiscardEdit:
+            if (source_dirty()) {
+                show_confirm(ConfirmKind::DiscardForExit);
+            } else if (source_editing_) {
+                leave_edit();
+            }
             break;
         case Action::Run:
             if (source_editing_) {
@@ -1559,6 +1631,37 @@ void App::open_file_dialog() {
         "Open KR8 program", "*.asm;*.s;*.k8;*.bin");
 }
 
+void App::save_source_as() {
+    if (!source_editing_) {
+        return;
+    }
+    window_.save_file(
+        [this](std::optional<std::filesystem::path> path) {
+            if (!path.has_value()) {
+                message_ = "save as canceled";
+                window_.invalidate();
+                return;
+            }
+            std::filesystem::path destination = *path;
+            if (!destination.has_extension()) {
+                destination.replace_extension(".asm");
+            }
+            std::string error;
+            if (!write_text_file(destination, editor_.text(), error)) {
+                message_ = error;
+                window_.invalidate();
+                return;
+            }
+            current_path_ = destination;
+            source_saved_ = editor_.text();
+            source_file_dirty_ = false;
+            message_ = "saved as " + destination.filename().string();
+            update_title();
+            window_.invalidate();
+        },
+        "Save source as", "*.asm", current_path_);
+}
+
 void App::open_settings() {
     settings_open_ = !settings_open_;
     help_open_ = false;
@@ -1641,6 +1744,7 @@ void App::enter_edit() {
     window_.set_timer(500, true);
     message_ = "editing — F8 assemble, Ctrl+S save";
     update_title();
+    layout();
     window_.invalidate();
 }
 
@@ -1654,6 +1758,7 @@ void App::leave_edit() {
                    ? "source file differs from the loaded image; assemble to update"
                    : "editing closed";
     update_title();
+    layout();
     window_.invalidate();
 }
 
@@ -1668,6 +1773,7 @@ void App::discard_edit() {
     window_.set_timer(8, false);
     message_ = "unsaved edits discarded";
     update_title();
+    layout();
     window_.invalidate();
 }
 
@@ -1816,6 +1922,8 @@ void App::load_settings() {
             follow_ = enabled;
         } else if (key == "changes") {
             show_changes_ = enabled;
+        } else if (key == "auto_lst") {
+            auto_lst_ = enabled;
         }
     }
 }
@@ -1830,6 +1938,7 @@ void App::save_settings() {
     }
     output << "follow=" << (follow_ ? 1 : 0) << '\n';
     output << "changes=" << (show_changes_ ? 1 : 0) << '\n';
+    output << "auto_lst=" << (auto_lst_ ? 1 : 0) << '\n';
 }
 
 void App::update_snapshot_history() {
@@ -1950,6 +2059,16 @@ void App::assemble_current() {
         source_saved_.clear();
         source_file_dirty_ = false;
         revalidate_line_breakpoints(old_breakpoints);
+    }
+    if (auto_lst_ && !session_.listing().empty()) {
+        std::filesystem::path listing_path = current_path_;
+        listing_path.replace_extension(".lst");
+        std::string listing_error;
+        if (write_text_file(listing_path, session_.listing(), listing_error)) {
+            message_ += "  +  " + listing_path.filename().string();
+        } else {
+            message_ = listing_error;
+        }
     }
     diagnostics_.clear();
     errors_open_ = false;
@@ -2088,6 +2207,9 @@ void App::handle_mouse_down(const MouseDown& down) {
         } else if (row == 1) {
             show_changes_ = !show_changes_;
             save_settings();
+        } else if (row == 2) {
+            auto_lst_ = !auto_lst_;
+            save_settings();
         } else if (row == 3 || row < 0) {
             settings_open_ = false;
         }
@@ -2201,6 +2323,14 @@ void App::handle_mouse_down(const MouseDown& down) {
                     .address);
         }
         return;
+    }
+    for (int reg = 0; reg < 2; ++reg) {
+        for (int bit = 0; bit < 8; ++bit) {
+            if (bit_rects_[reg][bit].contains(point)) {
+                toggle_register_bit(reg, bit);
+                return;
+            }
+        }
     }
     for (int i = 0; i < 4; ++i) {
         if (register_rects_[i].contains(point)) {
@@ -2722,6 +2852,22 @@ void App::commit_edit() {
     editing_register_ = -1;
     editing_memory_ = -1;
     edit_text_.clear();
+    window_.invalidate();
+}
+
+void App::toggle_register_bit(int index, int bit) {
+    if (!session_.loaded() || source_editing_ || session_.running() ||
+        editing_register_ >= 0 || editing_memory_ >= 0) {
+        return;
+    }
+    const Snapshot snapshot = session_.snapshot();
+    std::uint8_t value = index == 0 ? snapshot.a : snapshot.b;
+    value ^= static_cast<std::uint8_t>(1u << bit);
+    previous_ = snapshot;
+    have_previous_ = true;
+    session_.set_register(index, value);
+    message_ = std::string(index == 0 ? "A" : "B") + " bit " +
+               std::to_string(bit) + " toggled";
     window_.invalidate();
 }
 

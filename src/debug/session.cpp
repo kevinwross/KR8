@@ -60,6 +60,7 @@ std::vector<std::string> Session::split_source(std::string_view text) {
 
 bool Session::load_image(const std::filesystem::path& path,
                          std::string& error) {
+    listing_.clear();
     const ImageLoadResult loaded = load_image_file(path);
     if (!loaded.ok) {
         error = loaded.error;
@@ -71,6 +72,7 @@ bool Session::load_image(const std::filesystem::path& path,
 bool Session::load_image(const Image& image, const std::filesystem::path& path,
                          std::string& error) {
     (void)error;
+    listing_.clear();
     return load_internal(image, path);
 }
 
@@ -104,10 +106,12 @@ bool Session::assemble(const std::filesystem::path& path, std::string& error) {
     options.include_source = true;
     const AsmResult result = assemble_file(path, options);
     if (!result.ok) {
+        listing_.clear();
         diagnostics_ = result.diagnostics;
         error = diagnostic_text(result);
         return false;
     }
+    listing_ = result.listing;
     std::filesystem::path output = path;
     output.replace_extension(".k8");
     std::string save_error;
@@ -127,10 +131,12 @@ bool Session::assemble_source(std::string_view source, const std::string& name,
     options.include_source = true;
     const AsmResult result = kr8::assemble(source, options);
     if (!result.ok) {
+        listing_.clear();
         diagnostics_ = result.diagnostics;
         error = diagnostic_text(result);
         return false;
     }
+    listing_ = result.listing;
     const bool loaded = load_internal(result.image, name);
     diagnostics_ = result.diagnostics;
     return loaded;
@@ -149,6 +155,7 @@ bool Session::restart(std::string& error) {
 void Session::unload() {
     loaded_ = false;
     image_ = Image{};
+    listing_.clear();
     decoded_ = DecodedImage{};
     source_lines_.clear();
     executable_lines_.clear();

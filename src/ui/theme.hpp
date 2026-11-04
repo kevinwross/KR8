@@ -9,8 +9,8 @@ constexpr Color kPanel{29, 31, 38, 255};
 constexpr Color kPanelAlt{35, 38, 47, 255};
 constexpr Color kBorder{52, 56, 68, 255};
 constexpr Color kText{214, 218, 226, 255};
-constexpr Color kTextDim{118, 124, 140, 255};
-constexpr Color kComment{104, 112, 128, 255};
+constexpr Color kTextDim{136, 143, 161, 255};
+constexpr Color kComment{120, 129, 147, 255};
 constexpr Color kInstruction{126, 170, 255, 255};
 constexpr Color kDirective{190, 150, 255, 255};
 constexpr Color kNumber{235, 185, 95, 255};
@@ -36,6 +36,6 @@ constexpr int kStatus = 24;
 constexpr int kSourceGutter = 58;
 constexpr int kAsmGutter = 18;
 constexpr int kRowHeight = 20;
-constexpr int kRegisterHeight = 88;
+constexpr int kRegisterHeight = 136;
 
 }  // namespace kr8::ui

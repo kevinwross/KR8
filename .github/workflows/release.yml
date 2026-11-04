@@ -22,16 +22,16 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
-          $stage = "dist/kr8-0.2.2-win64"
+          $stage = "dist/kr8-0.2.3-win64"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item build/release/Release/kr8.exe $stage
           Copy-Item README.md, LICENSE, THIRD_PARTY_NOTICES.md $stage
           Copy-Item docs, examples $stage -Recurse
-          Compress-Archive -Path "$stage/*" -DestinationPath dist/kr8-0.2.2-win64.zip
+          Compress-Archive -Path "$stage/*" -DestinationPath dist/kr8-0.2.3-win64.zip
       - uses: actions/upload-artifact@v4
         with:
           name: kr8-windows
-          path: dist/kr8-0.2.2-win64.zip
+          path: dist/kr8-0.2.3-win64.zip
 
   linux:
     runs-on: ubuntu-22.04
@@ -75,5 +75,5 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/kr8-windows/kr8-0.2.2-win64.zip
+            dist/kr8-windows/kr8-0.2.3-win64.zip
             dist/kr8-linux/KR8-x86_64.AppImage

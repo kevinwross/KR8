@@ -126,6 +126,7 @@ public:
     std::size_t input_size() const noexcept;
     const std::string& console() const noexcept;
     const std::string& message() const noexcept { return message_; }
+    const std::string& listing() const noexcept { return listing_; }
     const std::vector<AsmDiagnostic>& diagnostics() const noexcept {
         return diagnostics_;
     }
@@ -172,6 +173,7 @@ private:
     bool breakpoint_skip_ = false;
     bool call_stack_valid_ = true;
     std::string message_;
+    std::string listing_;
     std::vector<AsmDiagnostic> diagnostics_;
     std::uint64_t accumulated_run_us_ = 0;
     std::chrono::steady_clock::time_point run_started_{};

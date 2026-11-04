@@ -1311,7 +1311,7 @@ These are not separate milestones; they are habits applied throughout.
 | Performance | Run in slices; no unbounded loops in the UI; step budget in the session. |
 | Compatibility | No OS headers outside `src/platform`; no Windows-only code in `src/ui`. |
 | Dependencies | No new third-party dependency without a licence entry and a plan note. |
-| Versioning | Tool `0.2.2`; image format `1.0`; bump deliberately. |
+| Versioning | Tool `0.2.3`; image format `1.0`; bump deliberately. |
 
 ---
 
@@ -1388,6 +1388,11 @@ Timestamps use `local-datetime` and the host time zone
 
 ### 2026-11-03
 
+- **2026-11-03T18:17:32-08:00** — UI polish batch: +15% dim-text brightness;
+  Edit-mode Save As/Discard; optional automatic `.lst` listing beside the source;
+  removed the run-slice info row; moved TIME/IPS to the status bar and fixed the
+  collision; added clickable bit displays for A/B. 147 C++ tests pass; version
+  and artifacts bumped to `0.2.3`; tag `v0.2.3`.
 - **2026-11-03T16:39:18-08:00** — Console hover input: while the pointer is over
   the Console pane, printable keys feed `IN` immediately without the field or
   Enter; Enter/Tab/Backspace queue `\n`/`09`/`08`. Added a hover accent and hint,
@@ -1614,3 +1619,5 @@ Use this at each gate; copy the relevant block into the work log.
 - [x] HLT leaves PC on the `HLT` instruction; `0.2.1` artifacts refreshed.
 - [x] Console hover input feeds `IN` without the input box or Enter; `0.2.2`
       artifacts refreshed.
+- [x] Edit-mode Save As/Discard, auto `.lst`, clickable A/B bits, and status-bar
+      TIME/IPS; `0.2.3` artifacts refreshed.

@@ -15,6 +15,14 @@ const char* kProgram =
 
 }  // namespace
 
+TEST(session_exposes_assembly_listing) {
+    Session session;
+    std::string error;
+    CHECK(session.assemble_source(kProgram, "test.asm", error));
+    CHECK(!session.listing().empty());
+    CHECK(session.listing().find("ADDR") != std::string::npos);
+}
+
 TEST(session_loads_source_and_snapshot) {
     Session session;
     std::string error;

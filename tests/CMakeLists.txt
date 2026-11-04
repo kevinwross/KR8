@@ -31,7 +31,7 @@ add_test(NAME kr8.tests COMMAND kr8_tests)
 
 add_test(NAME kr8.cli.version COMMAND kr8 --version)
 set_tests_properties(kr8.cli.version PROPERTIES
-  PASS_REGULAR_EXPRESSION "KR8 0.2.2"
+  PASS_REGULAR_EXPRESSION "KR8 0.2.3"
 )
 
 add_test(NAME kr8.cli.as

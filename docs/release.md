@@ -40,9 +40,9 @@ files under `usr/share/doc/kr8/`.
 
 ## Verification
 
-Current 0.2.2 artifacts:
+Current 0.2.3 artifacts:
 
-- Windows: `kr8.exe` 700,416 bytes; `kr8-0.2.2-win64.zip` about 1.6 MiB;
+- Windows: `kr8.exe` 711,680 bytes; `kr8-0.2.3-win64.zip` about 1.8 MiB;
   dependencies remain `USER32.dll`, `GDI32.dll`, `COMDLG32.dll`, and
   `KERNEL32.dll`.
 - Linux: `KR8-x86_64.AppImage` 2.2 MiB, built in Ubuntu 22.04; maximum

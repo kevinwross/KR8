@@ -35,6 +35,8 @@ private:
         ResetStats,
         Settings,
         EditSource,
+        SaveSourceAs,
+        DiscardEdit,
         CStepOver,
         CStepIn,
         CStepOut,
@@ -100,6 +102,7 @@ private:
     void request_open_file();
     void request_quit();
     void open_file_dialog();
+    void save_source_as();
     void open_settings();
     void toggle_edit();
     void enter_edit();
@@ -138,6 +141,7 @@ private:
     void start_memory_edit(std::uint8_t address);
     void commit_edit();
     void cancel_edit();
+    void toggle_register_bit(int index, int bit);
 
     int hit_button(Point point) const;
     bool in_source_gutter(Point point) const;
@@ -198,6 +202,7 @@ private:
     ConfirmKind confirm_ = ConfirmKind::None;
     bool follow_ = true;
     bool show_changes_ = true;
+    bool auto_lst_ = false;
     int hover_asm_ = -1;
     int hover_memory_ = -1;
 
@@ -225,6 +230,7 @@ private:
     int hover_button_ = -1;
 
     Rect register_rects_[4]{};
+    Rect bit_rects_[2][8]{};
     Rect flag_rects_[4]{};
     Point mouse_{};
 };

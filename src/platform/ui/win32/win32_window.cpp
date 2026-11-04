@@ -3,6 +3,7 @@
 #include <commdlg.h>
 #include <windowsx.h>
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -188,6 +189,36 @@ void Win32Window::open_file(FileCallback callback, std::string_view title,
     dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 
     if (GetOpenFileNameW(&dialog) == FALSE) {
+        callback(std::nullopt);
+        return;
+    }
+    callback(std::filesystem::path(path.data()));
+}
+
+void Win32Window::save_file(FileCallback callback, std::string_view title,
+                            std::string_view filter,
+                            const std::filesystem::path& default_path) {
+    (void)filter;
+    static const wchar_t kFilter[] =
+        L"KR8 source\0*.asm\0All files\0*.*\0";
+    std::vector<wchar_t> path(32768, L'\0');
+    const std::wstring initial = default_path.wstring();
+    if (!initial.empty() && initial.size() + 1 < path.size()) {
+        std::copy(initial.begin(), initial.end(), path.begin());
+    }
+    const std::wstring wide_title = widen(title);
+    OPENFILENAMEW dialog{};
+    dialog.lStructSize = sizeof(dialog);
+    dialog.hwndOwner = hwnd_;
+    dialog.lpstrFilter = kFilter;
+    dialog.lpstrFile = path.data();
+    dialog.nMaxFile = static_cast<DWORD>(path.size());
+    dialog.lpstrTitle = wide_title.c_str();
+    dialog.lpstrDefExt = L"asm";
+    dialog.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST |
+                   OFN_NOCHANGEDIR;
+
+    if (GetSaveFileNameW(&dialog) == FALSE) {
         callback(std::nullopt);
         return;
     }

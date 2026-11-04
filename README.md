@@ -19,6 +19,8 @@ The design is frozen in [kr8-plan.md](kr8-plan.md); the task-level checklist is
 - **M6** — docs, packaging, release checks: done
 - **Post-v1** — built-in source editor in explicit Edit mode: implemented
 - **Post-v1** — hover the Console pane and type directly into `IN`: implemented
+- **Post-v1** — clickable A/B bit displays and status-bar TIME/IPS: implemented
+- **Post-v1** — Edit-mode Save As/Discard and optional `.lst` listing: implemented
 
 The target machine has no C/C++ compiler and no linker. `kr8 as` produces one
 self-contained image; the host tools and UI are C++20. The debugger includes a
