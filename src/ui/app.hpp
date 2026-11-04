@@ -221,6 +221,7 @@ private:
     int symbols_scroll_ = 0;
     int stack_scroll_ = 0;
     int console_scroll_ = 0;
+    int help_scroll_ = 0;
     int hover_button_ = -1;
 
     Rect register_rects_[4]{};

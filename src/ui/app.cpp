@@ -1194,16 +1194,32 @@ void App::draw_help(Canvas& canvas) {
     canvas.text(overlay.right - 160, overlay.top + 10,
                 "Esc or F1 to close", kTextDim, FontRole::MonoSmall);
 
-    const int line_height = 15;
+    const int line_height = 14;
     const int column_width = (overlay.width() - 40) / 2;
     const int split = static_cast<int>(help_lines_.size()) / 2;
-    canvas.push_clip(Rect{overlay.left + 10, overlay.top + 34,
-                          overlay.right - 10, overlay.bottom - 10});
+    const int top = overlay.top + 34;
+    const int bottom = overlay.bottom - 10;
+    const int visible_rows = std::max(1, (bottom - top) / line_height);
+    const int rows = std::max(split,
+                              static_cast<int>(help_lines_.size()) - split);
+    const int max_scroll = std::max(0, rows - visible_rows);
+    help_scroll_ = std::clamp(help_scroll_, 0, max_scroll);
+    if (max_scroll > 0) {
+        canvas.text(overlay.left + 160, overlay.top + 10,
+                    "PgUp/PgDn or wheel to scroll", kTextDim,
+                    FontRole::MonoSmall);
+    }
+    canvas.push_clip(
+        Rect{overlay.left + 10, top, overlay.right - 10, bottom});
     for (int i = 0; i < static_cast<int>(help_lines_.size()); ++i) {
         const int column = i < split ? 0 : 1;
         const int row = column == 0 ? i : i - split;
+        const int visible_row = row - help_scroll_;
+        if (visible_row < 0 || visible_row >= visible_rows) {
+            continue;
+        }
         const int x = overlay.left + 14 + column * column_width;
-        const int y = overlay.top + 38 + row * line_height;
+        const int y = top + visible_row * line_height;
         canvas.text(x, y, help_lines_[static_cast<std::size_t>(i)], kText,
                     FontRole::MonoSmall);
     }
@@ -2298,6 +2314,12 @@ void App::handle_mouse_move(const MouseMove& move) {
 }
 
 void App::handle_wheel(const MouseWheel& wheel) {
+    if (help_open_) {
+        const int amount = wheel.delta > 0 ? -3 : 3;
+        help_scroll_ = std::max(0, help_scroll_ + amount);
+        window_.invalidate();
+        return;
+    }
     const int amount = wheel.delta > 0 ? -3 : 3;
     if (source_text_.contains(wheel.position)) {
         source_scroll_ = std::max(0, source_scroll_ + amount);
@@ -2326,6 +2348,7 @@ void App::handle_key(const KeyDown& key) {
     }
     if (key.key == Key::F1) {
         help_open_ = !help_open_;
+        help_scroll_ = 0;
         window_.invalidate();
         return;
     }
@@ -2333,6 +2356,28 @@ void App::handle_key(const KeyDown& key) {
         if (key.key == Key::Escape) {
             help_open_ = false;
             window_.invalidate();
+            return;
+        }
+        if (key.key == Key::PageDown || key.key == Key::Down) {
+            help_scroll_ += key.key == Key::PageDown ? 8 : 1;
+            window_.invalidate();
+            return;
+        }
+        if (key.key == Key::PageUp || key.key == Key::Up) {
+            help_scroll_ =
+                std::max(0, help_scroll_ - (key.key == Key::PageUp ? 8 : 1));
+            window_.invalidate();
+            return;
+        }
+        if (key.key == Key::Home) {
+            help_scroll_ = 0;
+            window_.invalidate();
+            return;
+        }
+        if (key.key == Key::End) {
+            help_scroll_ = 10000;
+            window_.invalidate();
+            return;
         }
         return;
     }
